@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 기본 글꼴 및 전체 문서 초기화 */
+html {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+  scroll-behavior: smooth;
+}
+
+/* 기본 배경/텍스트 색상: 라이트 모드 기준 */
+body {
+  @apply bg-white text-gray-900 transition-colors duration-300;
+}
+
+/* 다크모드용: html 태그에 class="dark" 붙으면 작동 */
+.dark body {
+  @apply bg-zinc-900 text-gray-100;
+}
+
+/* 링크 스타일 */
+a {
+  @apply text-blue-600 hover:underline;
+}
+
+/* 버튼 기본값 */
+button {
+  @apply px-4 py-2 rounded-md font-medium transition-colors;
+}
+button:hover {
+  @apply bg-gray-100 dark:bg-zinc-700;
+}
+
+/* 입력 필드 기본값 */
+input,
+textarea,
+select {
+  @apply border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-zinc-800 dark:text-white dark:border-zinc-600;
+}
