@@ -1,6 +1,8 @@
+// ** 사용자 대시보드 페이지 **
+
 import React from "react";
 import { useAuth } from "../context/AuthContext";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 
 function DashboardPage() {
   const { user, logout } = useAuth();
@@ -36,7 +38,12 @@ function DashboardPage() {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-lg font-semibold">메인 컨텐츠 영역</h2>
           <p className="mt-2 text-gray-600">
-            이곳에 이력서 빌더, Q&A 게시판 등의 기능이 들어올 예정입니다.
+            <Link
+              to="/instructor"
+              className="text-black hover:no-underline hover:font-semibold"
+            >
+              영상 대시보드 바로가기
+            </Link>
           </p>
         </div>
       </main>

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { CheckCircleIcon } from "@heroicons/react/24/solid"; // npm install @heroicons/react. 아이콘을 추가한다.
 
 // API 기본 URL을 Railway 주소로 변경
-const API_BASE_URL = "http://localhost:8080/api/auth"; //"https://careerfolio.up.railway.app/api/auth";
+const API_BASE_URL = "http://localhost:8080"; //"https://careerfolio.up.railway.app/api/auth";
 
 function SignupPage() {
   const [formData, setFormData] = useState({
@@ -95,7 +95,7 @@ function SignupPage() {
   const checkDuplicate = async () => {
     if (!valid.idFormat) return alert("아이디 형식이 올바르지 않습니다.");
     try {
-      const res = await axios.get(`${API_BASE_URL}/check-duplicate`, {
+      const res = await axios.get(`${API_BASE_URL}/api/auth/check-duplicate`, {
         params: { type: "id", value: formData.id },
       });
       if (res.data.exists) {
@@ -114,7 +114,7 @@ function SignupPage() {
   const handleSendCode = async () => {
     if (!valid.emailFormat) return alert("유효한 이메일 주소를 입력해주세요.");
     try {
-      const res = await axios.post(`${API_BASE_URL}/send-code`, {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/send-code`, {
         email: formData.email,
       });
       alert(res.data.message);
@@ -128,7 +128,7 @@ function SignupPage() {
     if (!/^\d{6}$/.test(formData.emailCode))
       return alert("6자리 숫자 코드를 입력하세요.");
     try {
-      const res = await axios.post(`${API_BASE_URL}/verify-code`, {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/verify-code`, {
         email: formData.email,
         code: formData.emailCode,
       });
@@ -160,7 +160,7 @@ function SignupPage() {
 
     const { name, email, phoneNumber, id, password } = formData;
     try {
-      const response = await axios.post(`${API_BASE_URL}/signup`, {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
         name,
         email,
         phoneNumber,
