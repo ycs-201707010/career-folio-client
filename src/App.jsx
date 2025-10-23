@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout"; // 레이아웃 import
 // Route
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -25,100 +26,95 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* 기본 경로(/)로 접속 시 HomePage를 보여줍니다. */}
-        <Route path="/" element={<HomePage />} />
-        {/* 다른 라우트들 */}
-        <Route path="/signup" element={<SignupPage />} />
+        {/* Navbar가 있는 페이지 그룹 */}
+        <Route element={<Layout />}>
+          {/* 공개 페이지 */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/courses" element={<CourseListPage />} />
+          <Route path="/course/:courseId" element={<CourseDetailPage />} />
+
+          {/* 로그인이 필요한 페이지 */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute>
+                <CartPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute>
+                <CheckoutPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-courses"
+            element={
+              <ProtectedRoute>
+                <MyCoursesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/learn/course/:courseId"
+            element={
+              <ProtectedRoute>
+                <LecturePlayerPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/instructor/dashboard"
+            element={
+              <ProtectedRoute>
+                <InstructorDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/instructor/course/new"
+            element={
+              <ProtectedRoute>
+                <NewCoursePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/instructor/course/:courseId"
+            element={
+              <ProtectedRoute>
+                <CourseManagePage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 관리자 전용 페이지 */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <AdminRoute>
+                <AdminDashboardPage />
+              </AdminRoute>
+            }
+          />
+        </Route>
+
+        {/* Navbar가 없는 독립적인 페이지 (로그인, 회원가입) */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/courses" element={<CourseListPage />} />
-        <Route path="/course/:courseId" element={<CourseDetailPage />} />
-
-        <Route
-          path="/learn/course/:courseId"
-          element={
-            <ProtectedRoute>
-              <LecturePlayerPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/my-courses"
-          element={
-            <ProtectedRoute>
-              <MyCoursesPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/checkout"
-          element={
-            <ProtectedRoute>
-              <CheckoutPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* 로그인한 사용자만 이용 가능한 페이지의 경우, ProtectedRoute로 감싼다. */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/** 강좌를 생성한 강사 관련 페이지 */}
-        <Route
-          path="/instructor"
-          element={
-            <ProtectedRoute>
-              <InstructorDashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/instructor/course/new"
-          element={
-            <ProtectedRoute>
-              <NewCoursePage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/instructor/course/:courseId"
-          element={
-            <ProtectedRoute>
-              <CourseManagePage />
-            </ProtectedRoute>
-          }
-        />
-        {/* 강사 관련 페이지 End */}
-
-        {/** 장바구니 페이지 */}
-        <Route
-          path="/cart"
-          element={
-            <ProtectedRoute>
-              <CartPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/** 관리자 계열 페이지 */}
-        <Route
-          path="/admin/dashboard"
-          element={
-            <AdminRoute>
-              <AdminDashboardPage />
-            </AdminRoute>
-          }
-        />
-
-        {/** 관리자 계열 페이지 End */}
+        <Route path="/signup" element={<SignupPage />} />
       </Routes>
     </Router>
   );

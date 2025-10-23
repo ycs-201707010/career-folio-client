@@ -228,7 +228,7 @@ function SignupPage() {
               className={`px-3 py-1 rounded text-sm dark:bg-zinc-600 dark:text-white ${
                 valid.emailFormat && !valid.emailVerified
                   ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "bg-gray-400 cursor-not-allowed"
+                  : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
               }`}
               disabled={!valid.emailFormat || valid.emailVerified}
               onClick={handleSendCode}
@@ -257,7 +257,7 @@ function SignupPage() {
               className={`px-3 py-1 rounded text-sm dark:bg-zinc-600 dark:text-white ${
                 formData.emailCode.length > 0 && !valid.emailVerified
                   ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "bg-gray-400 cursor-not-allowed"
+                  : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
               }`}
               disabled={formData.emailCode.length === 0 || valid.emailVerified}
               onClick={handleVerifyCode}
@@ -315,7 +315,7 @@ function SignupPage() {
               className={`px-3 py-1 rounded text-sm dark:bg-zinc-600 dark:text-white ${
                 valid.idFormat && !valid.idAvailable
                   ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "bg-gray-400 cursor-not-allowed"
+                  : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
               }`}
               disabled={!valid.idFormat || valid.idAvailable}
               onClick={checkDuplicate}
@@ -396,7 +396,7 @@ function SignupPage() {
           className={`w-full py-2 rounded text-white transition ${
             isAllValid
               ? "bg-blue-600 hover:bg-blue-700"
-              : "bg-gray-400 cursor-not-allowed"
+              : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
           }`}
         >
           {isLoading ? "가입 처리 중..." : "가입하기"}
