@@ -1,3 +1,5 @@
+// ** 내가 수강중인 강좌 목록 화면 **
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -22,7 +24,10 @@ const EnrolledCourseCard = ({ course }) => {
       <Link to={`/learn/course/${course.idx}`}>
         <div className="h-40 bg-gray-200">
           <img
-            src={course.thumbnail_url || "https://via.placeholder.com/300x180"}
+            src={
+              `${API_BASE_URL}/${course.thumbnail_url}` ||
+              "https://via.placeholder.com/300x180"
+            }
             alt={course.title}
             className="w-full h-full object-cover"
           />

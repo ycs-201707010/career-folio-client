@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import ReactPlayer from "react-player"; // ReactPlayer 사용
+import { ArrowLeftIcon } from "@heroicons/react/24/solid"; // 뒤로가기 아이콘
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -65,12 +66,49 @@ const getYouTubeId = (url) => {
   return match && match[2].length === 11 ? match[2] : null;
 };
 
+// 플레이어 상단 네비게이션 바 컴포넌트
+const PlayerNavbar = ({ courseTitle, onBackClick }) => {
+  return (
+    <div
+      // 이미지와 유사한 배경 및 그림자 효과, 부드러운 전환 효과
+      className={`bg-white z-20 px-6 py-3 
+                       backdrop-blur-sm shadow-lg 
+                        transition-transform duration-300 ease-out 
+                        `}
+    >
+      <div className="flex items-center justify-between ">
+        {/* 좌측: 뒤로가기 버튼 */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onBackClick}
+            className="flex items-center gap-2 text-base hover:text-green-600 transition-colors"
+          >
+            <ArrowLeftIcon className="h-5 w-5" />
+          </button>
+          <span className="font-medium">{courseTitle}</span>
+        </div>
+
+        {/* 우측: 수강평 작성하기 버튼 */}
+        <button
+          onClick={() => alert("수강평 작성 기능 (미구현)")} // 실제 기능으로 대체 필요
+          className="flex items-center gap-1 text-sm text-yellow-400 font-semibold
+                               hover:text-yellow-300 transition-colors"
+        >
+          <span className="text-xl">⭐</span>
+          <span>수강평 작성하기</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 function LecturePlayerPage() {
   const { courseId } = useParams();
   const { token } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const playerRef = useRef(null); // ReactPlayer 참조용
+  const memoInputRef = useRef(null); // (★★신규★★) 메모 입력창 참조
   const lastUpdateTime = useRef(Date.now());
   const progressSaveInterval = 15 * 1000;
 
@@ -91,8 +129,9 @@ function LecturePlayerPage() {
   const [videoUrl, setVideoUrl] = useState("");
   // (★★수정★★) isPlayerReady 제거, 대신 플레이어 로딩 상태 직접 관리
   const [isPlayerLoading, setIsPlayerLoading] = useState(true);
-
-  const [newMemoContent, setNewMemoContent] = useState(""); // (★★신규★★) 새 메모 내용 상태
+  const [newMemo, setNewMemo] = useState({ timestamp: null, content: "" });
+  // (★★신규★★) Navbar 가시성 상태
+  const [isNavbarVisible, setIsNavbarVisible] = useState(false);
 
   // 강좌 데이터 로드 시 실행
   useEffect(() => {
@@ -137,6 +176,7 @@ function LecturePlayerPage() {
 
   // 현재 강의 변경 시 videoUrl 계산
   useEffect(() => {
+    setNewMemo({ timestamp: null, content: "" }); // 메모창 닫기
     console.log("[Effect 2] currentLecture changed:", currentLecture);
     setIsPlayerLoading(true);
     let finalUrl = "";
@@ -211,19 +251,6 @@ function LecturePlayerPage() {
     },
   });
 
-  // (★★신규★★) 새 메모 추가 mutation
-  const addMemoMutation = useMutation({
-    mutationFn: addMemo,
-    onSuccess: () => {
-      // 메모 추가 성공 시, 해당 강의의 메모 목록 쿼리를 무효화하여 다시 불러옴
-      queryClient.invalidateQueries({
-        queryKey: ["memos", currentLecture.idx],
-      });
-      setNewMemoContent(""); // 입력창 비우기
-    },
-    onError: (err) => alert(err.response?.data?.message || "메모 추가 실패"),
-  });
-
   // ReactPlayer 진행률 콜백
   const handleProgress = (progress) => {
     if (!currentLecture || !playerRef.current || mutation.isPending) return;
@@ -263,18 +290,80 @@ function LecturePlayerPage() {
     lastUpdateTime.current = Date.now();
   };
 
-  // (★★신규★★) 메모 추가 핸들러
-  const handleAddMemo = () => {
-    if (!newMemoContent.trim() || !playerRef.current || !currentLecture) return;
+  // (★★신규★★) 새 메모 추가 mutation
+  const addMemoMutation = useMutation({
+    mutationFn: addMemo,
+    onSuccess: async (newMemoData) => {
+      await queryClient.cancelQueries({
+        queryKey: ["memos", currentLecture.idx],
+      });
+
+      // 2. 캐시를 직접 업데이트하여 즉각적인 UI 반응 (Optimistic Update)
+      queryClient.setQueryData(["memos", currentLecture.idx], (oldMemos) => {
+        const newMemos = oldMemos ? [...oldMemos, newMemoData] : [newMemoData];
+        // 시간순으로 다시 정렬
+        return newMemos.sort(
+          (a, b) => a.timestamp_seconds - b.timestamp_seconds
+        );
+      });
+
+      // 3. 폼 상태 초기화 (메모창 닫기)
+      setNewMemo({ timestamp: null, content: "" });
+    },
+    onError: (err) => alert(err.response?.data?.message || "메모 추가 실패"),
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["memos", currentLecture.idx],
+      });
+    },
+  });
+
+  // (★★신규★★) '현재 시간 메모' 버튼 핸들러
+  const handleMarkAndMemo = () => {
+    if (!playerRef.current) return;
     const currentTime = Math.floor(playerRef.current.getCurrentTime());
+    setNewMemo({ timestamp: currentTime, content: "" }); // 시간 마킹
+    memoInputRef.current?.focus(); // 입력창으로 포커스 이동
+  };
+
+  // (★★신규★★) 메모 저장 핸들러
+  const handleSaveMemo = () => {
+    if (
+      !newMemo.content.trim() ||
+      newMemo.timestamp === null ||
+      !currentLecture
+    )
+      return;
     addMemoMutation.mutate({
       lectureId: currentLecture.idx,
-      timestampSeconds: currentTime,
-      content: newMemoContent,
+      timestampSeconds: newMemo.timestamp,
+      content: newMemo.content,
       token,
     });
   };
 
+  // (★★신규★★) 마우스 움직임 감지 및 Navbar 가시성 제어
+  const handleMouseMove = useCallback((e) => {
+    // 플레이어 영역 상단 100px 이내에서만 Navbar를 표시
+    if (e.clientY < 100) {
+      setIsNavbarVisible(true);
+    } else {
+      setIsNavbarVisible(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const playerElement = playerRef.current?.wrapper; // ReactPlayer의 DOM 요소에 접근
+    if (playerElement) {
+      playerElement.addEventListener("mousemove", handleMouseMove);
+      // 컴포넌트 언마운트 시 이벤트 리스너 제거
+      return () => {
+        playerElement.removeEventListener("mousemove", handleMouseMove);
+      };
+    }
+  }, [handleMouseMove]);
+
+  // ** 화면 출력 **
   if (isCourseLoading)
     return <div className="text-center p-10">강의를 불러오는 중입니다...</div>;
   if (isError)
@@ -294,6 +383,13 @@ function LecturePlayerPage() {
     <div className="flex h-screen bg-gray-100">
       {/* 왼쪽: 비디오 플레이어 */}
       <main className="flex-grow flex flex-col">
+        {/* (★★신규★★) PlayerNavbar 렌더링 */}
+        <PlayerNavbar
+          courseTitle={currentLecture.title} // 강좌 제목 전달
+          onBackClick={() => navigate("/my-courses")} // 학습 목록으로 이동
+          isVisible={isNavbarVisible}
+        />
+
         <div
           className="bg-black flex-grow relative w-full"
           style={{ minHeight: "300px", height: "70vh" }}
@@ -331,7 +427,7 @@ function LecturePlayerPage() {
           )}
         </div>
 
-        <div className="p-4 bg-white shadow-md">
+        {/* <div className="p-4 bg-white shadow-md">
           {" "}
           <h1 className="text-xl md:text-2xl font-bold truncate">
             {currentLecture?.title || "강의 정보"}
@@ -342,6 +438,82 @@ function LecturePlayerPage() {
           >
             ← 학습 목록으로 돌아가기
           </button>{" "}
+        </div> */}
+
+        {/* (★★신규★★) 메모 영역 - 유튜브 댓글 스타일 */}
+        <div
+          className="bg-white p-4 shadow-md overflow-y-auto"
+          style={{ flexBasis: "35%" }}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">구간별 메모</h2>
+            <button
+              onClick={handleMarkAndMemo}
+              disabled={!currentLecture || addMemoMutation.isPending}
+              className="bg-blue-500 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+            >
+              + 현재 시간 메모하기
+            </button>
+          </div>
+
+          {/* 새 메모 작성 UI */}
+          {newMemo.timestamp !== null && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="text-sm font-semibold text-blue-700 mb-2">
+                메모 추가 @ {formatTime(newMemo.timestamp)}
+              </div>
+              <textarea
+                ref={memoInputRef}
+                value={newMemo.content}
+                onChange={(e) =>
+                  setNewMemo((prev) => ({ ...prev, content: e.target.value }))
+                }
+                placeholder="여기에 메모를 입력하세요..."
+                rows="3"
+                className="w-full border rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              ></textarea>
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  onClick={() => setNewMemo({ timestamp: null, content: "" })}
+                  className="text-xs text-gray-600 px-3 py-1"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSaveMemo}
+                  disabled={addMemoMutation.isPending}
+                  className="text-xs text-white px-3 py-1 rounded bg-blue-600 hover:bg-blue-700"
+                >
+                  {addMemoMutation.isPending ? "저장 중..." : "메모 저장"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 메모 목록 */}
+          <div className="space-y-3">
+            {isMemosLoading && (
+              <p className="text-xs text-gray-500">메모 로딩 중...</p>
+            )}
+            {memos?.length === 0 && (
+              <p className="text-sm text-gray-500 text-center py-4">
+                아직 작성된 메모가 없습니다.
+              </p>
+            )}
+            {memos?.map((memo) => (
+              <div key={memo.idx} className="flex items-start gap-3 text-sm">
+                <button
+                  onClick={() =>
+                    playerRef.current?.seekTo(memo.timestamp_seconds)
+                  }
+                  className="font-mono font-semibold text-blue-600 hover:underline flex-shrink-0 mt-0.5"
+                >
+                  {formatTime(memo.timestamp_seconds)}
+                </button>
+                <p className="text-gray-800 break-words">{memo.content}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </main>
 

@@ -2,6 +2,7 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import CourseCardSkeleton from "../components/CourseCardSkeleton";
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -25,7 +26,7 @@ function CourseCard({ course }) {
         {/* 썸네일 이미지가 있다면 표시, 없다면 회색 박스 */}
         {course.thumbnail_url ? (
           <img
-            src={course.thumbnail_url}
+            src={`${API_BASE_URL}/${course.thumbnail_url}`}
             alt={course.title}
             className="w-full h-full object-cover"
           />
@@ -87,14 +88,18 @@ function CourseListPage() {
         <h1 className="text-3xl font-bold text-center mb-8">전체 강좌 목록</h1>
 
         {/* TODO: 여기에 검색 및 필터링 UI가 들어올 예정입니다. */}
-
-        {isLoading && <p className="text-center">강좌 목록을 불러오는 중...</p>}
         {isError && (
           <p className="text-center text-red-500">오류가 발생했습니다.</p>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {courses &&
+          {isLoading &&
+            Array.from({ length: 8 }).map((_, index) => (
+              <CourseCardSkeleton key={index} />
+            ))}
+
+          {!isLoading &&
+            courses &&
             courses.map((course) => (
               <CourseCard key={course.idx} course={course} />
             ))}

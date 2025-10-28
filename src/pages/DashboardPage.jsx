@@ -39,7 +39,7 @@ function DashboardPage() {
           <h2 className="text-lg font-semibold">메인 컨텐츠 영역</h2>
           <p className="mt-2 text-gray-600">
             <Link
-              to="/instructor"
+              to="/instructor/dashboard"
               className="text-black hover:no-underline hover:font-semibold"
             >
               영상 대시보드 바로가기

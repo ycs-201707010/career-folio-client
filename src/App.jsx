@@ -67,14 +67,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/learn/course/:courseId"
-            element={
-              <ProtectedRoute>
-                <LecturePlayerPage />
-              </ProtectedRoute>
-            }
-          />
 
           <Route
             path="/instructor/dashboard"
@@ -111,6 +103,15 @@ function App() {
             }
           />
         </Route>
+
+        <Route
+          path="/learn/course/:courseId"
+          element={
+            <ProtectedRoute>
+              <LecturePlayerPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Navbar가 없는 독립적인 페이지 (로그인, 회원가입) */}
         <Route path="/login" element={<LoginPage />} />
