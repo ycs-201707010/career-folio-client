@@ -185,12 +185,18 @@ function SortableLectureItem({ lecture, queryClient, token, courseIdx }) {
       formData.append("title", editForm.title);
       hasChanges = true;
     }
+
+    // (★★수정★★) duration_seconds는 항상 보내도록 (값이 같더라도) - NOT NULL 제약조건 때문
+    // formData.append("duration_seconds", editForm.duration_seconds || 0); // 빈 값이면 0으로 보냄
+
     if (
       editForm.duration_seconds &&
       editForm.duration_seconds !== lecture.duration_seconds
     ) {
       formData.append("duration_seconds", editForm.duration_seconds);
       hasChanges = true;
+    } else if (editForm.duration_seconds === undefined) {
+      formData.append("duration_seconds", 0); // 빈 값이면 0으로 보냄
     }
 
     // 업로드 타입을 upload로 결정하고 비디오 파일이 존재할 경우
@@ -240,56 +246,67 @@ function SortableLectureItem({ lecture, queryClient, token, courseIdx }) {
       <li
         ref={setNodeRef}
         style={{ transform: CSS.Transform.toString(transform), transition }}
-        className="text-sm p-3 bg-white rounded border-2 border-blue-500 shadow-lg space-y-2"
+        className="text-sm p-3 bg-white rounded border-2 border-blue-500 shadow-lg space-y-3"
       >
+        {/* 제목 입력 */}
         <input
           type="text"
-          placeholder="강의 제목"
           value={editForm.title}
           onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-          className="w-full text-sm border-b focus:outline-none"
+          className="w-full text-sm font-semibold border-b focus:outline-none"
         />
 
-        {/** 영상 소스 수정 옵션 */}
-        <div className="flex gap-4 text-sm">
-          <label className="flex items-center gap-1 cursor-pointer">
-            <input
-              type="radio"
-              name={`editUploadType-${lecture.idx}`}
-              value="keep"
-              checked={editUploadType === "keep"}
-              onChange={() => setEditUploadType("keep")}
-            />{" "}
-            기존 영상 유지
+        {/* (★★수정★★) 영상 길이 입력 (항상 표시) */}
+        <input
+          type="number"
+          value={editForm.duration_seconds}
+          onChange={(e) =>
+            setEditForm({ ...editForm, duration_seconds: e.target.value })
+          }
+          className="w-full text-sm border-b focus:outline-none mt-1"
+          placeholder="영상 길이(초)"
+          min="0" // 음수 입력 방지
+        />
+
+        {/* 영상 소스 수정 옵션 */}
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-gray-600 block">
+            영상 소스 변경
           </label>
-          <label className="flex items-center gap-1 cursor-pointer">
-            <input
-              type="radio"
-              name={`uploadType-${lecture.idx}`}
-              value="upload"
-              checked={editUploadType === "upload"}
-              onChange={() => setEditUploadType("upload")}
-              className="form-radio"
-            />
-            직접 업로드
-          </label>
-          <label className="flex items-center gap-1 cursor-pointer">
-            <input
-              type="radio"
-              name={`uploadType-${lecture.idx}`}
-              value="url"
-              checked={editUploadType === "url"}
-              onChange={() => setEditUploadType("url")}
-              className="form-radio"
-            />
-            URL 링크
-          </label>
-        </div>
-        {editUploadType === "upload" && (
-          <div>
-            <label className="text-xs text-gray-500">
-              영상 교체 (선택 사항)
+          <div className="flex gap-4 text-xs">
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input
+                type="radio"
+                name={`editUploadType-${lecture.idx}`}
+                value="keep"
+                checked={editUploadType === "keep"}
+                onChange={() => setEditUploadType("keep")}
+              />{" "}
+              기존 영상 유지
             </label>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input
+                type="radio"
+                name={`editUploadType-${lecture.idx}`}
+                value="upload"
+                checked={editUploadType === "upload"}
+                onChange={() => setEditUploadType("upload")}
+              />{" "}
+              파일로 교체
+            </label>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input
+                type="radio"
+                name={`editUploadType-${lecture.idx}`}
+                value="url"
+                checked={editUploadType === "url"}
+                onChange={() => setEditUploadType("url")}
+              />{" "}
+              URL로 교체
+            </label>
+          </div>
+
+          {editUploadType === "upload" && (
             <input
               type="file"
               accept="video/*"
@@ -298,20 +315,8 @@ function SortableLectureItem({ lecture, queryClient, token, courseIdx }) {
               }
               className="w-full text-xs block"
             />
-            <input
-              type="number"
-              value={editForm.duration_seconds}
-              onChange={(e) =>
-                setEditForm({ ...editForm, duration_seconds: e.target.value })
-              }
-              className="w-full text-sm border-b focus:outline-none mt-1"
-              placeholder="영상 길이(초)"
-            />
-          </div>
-        )}
-
-        {editUploadType === "url" && (
-          <div>
+          )}
+          {editUploadType === "url" && (
             <input
               type="text"
               value={editForm.video_url}
@@ -321,8 +326,8 @@ function SortableLectureItem({ lecture, queryClient, token, courseIdx }) {
               className="w-full text-xs border-b focus:outline-none"
               placeholder="새로운 동영상 URL"
             />
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="flex justify-end gap-2 mt-2">
           <button
@@ -336,7 +341,8 @@ function SortableLectureItem({ lecture, queryClient, token, courseIdx }) {
             className="text-xs px-3 py-1 bg-blue-600 text-white rounded"
             disabled={updateMutation.isPending}
           >
-            {updateMutation.isPending ? "저장 중..." : "수정 사항 저장"}
+            {" "}
+            {updateMutation.isPending ? "저장 중..." : "저장"}{" "}
           </button>
         </div>
       </li>

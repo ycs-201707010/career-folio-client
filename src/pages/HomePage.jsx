@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"; // react-router-dom의 Link 컴포넌�
 
 function HomePage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center text-center p-4">
       <div className="max-w-2xl">
         <h1 className="text-4xl md:text-6xl font-extrabold text-gray-800">
           CareerFolio

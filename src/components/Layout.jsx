@@ -4,9 +4,9 @@ import Navbar from "./navbar";
 
 function Layout() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className=" min-h-screen flex flex-col">
       <Navbar /> {/* 상단에 Navbar 고정 */}
-      <main className="flex-grow">
+      <main className="flex-grow isolate">
         {/* 여기에 각 페이지의 실제 내용이 렌더링됩니다. */}
         <Outlet />
       </main>

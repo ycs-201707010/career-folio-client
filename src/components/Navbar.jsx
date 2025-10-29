@@ -6,7 +6,7 @@ function Navbar() {
   const { user, logout } = useAuth(); // 현재 사용자 정보와 로그아웃 함수 가져오기
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-white shadow-md relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* 왼쪽: 로고 및 주요 메뉴 */}

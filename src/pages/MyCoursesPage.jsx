@@ -19,9 +19,11 @@ const fetchMyCourses = async (token) => {
 
 // 수강 중인 강좌를 표시하는 카드 컴포넌트
 const EnrolledCourseCard = ({ course }) => {
+  console.log("EnrolledCourseCard - Received course data:", course);
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden transition-shadow duration-300">
-      <Link to={`/learn/course/${course.idx}`}>
+      <Link to={`/learn/course/${course.course_idx}`}>
         <div className="h-40 bg-gray-200">
           <img
             src={
@@ -76,8 +78,8 @@ function MyCoursesPage() {
   });
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto py-8 px-4">
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto p-6 ">
         <h1 className="text-3xl font-bold mb-8">나의 학습</h1>
 
         {isLoading && <p className="text-center">수강 목록을 불러오는 중...</p>}

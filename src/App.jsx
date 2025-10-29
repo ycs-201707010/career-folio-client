@@ -19,6 +19,7 @@ import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import MyCoursesPage from "./pages/MyCoursesPage";
 import LecturePlayerPage from "./pages/LecturePlayerPage";
+import MyProfilePage from "./pages/MyProfilePage";
 
 // ... 다른 페이지 import ...
 
@@ -39,6 +40,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/my-profile"
+            element={
+              <ProtectedRoute>
+                <MyProfilePage />
               </ProtectedRoute>
             }
           />
