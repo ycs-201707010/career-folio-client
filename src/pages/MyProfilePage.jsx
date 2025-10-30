@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import { UserCircleIcon } from "@heroicons/react/24/outline";
 
 // 로컬 개발 시에는 로컬 서버 주소, 배포 시에는 배포된 서버 주소 사용
 const API_BASE_URL =
@@ -62,12 +63,16 @@ const deleteExperience = async ({ expId, token }) => {
 
 // 프로필 정보 수정 컴포넌트
 const ProfileEdit = ({ profile, token, queryClient }) => {
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({
+    nickname: profile?.nickname || "",
+    bio: profile?.bio || "",
+  });
   const [pictureFile, setPictureFile] = useState(null);
   const [picturePreview, setPicturePreview] = useState(null);
 
   // profile 데이터가 로드되거나 변경되면 form 상태 초기화
   useEffect(() => {
+    // profile이 존재하고, formData가 아직 null일 때만 초기화 (최초 로드 시)
     if (profile) {
       console.log("Initializing ProfileEdit form with:", profile);
       setFormData({
@@ -121,6 +126,9 @@ const ProfileEdit = ({ profile, token, queryClient }) => {
   const handleRemovePicture = () => {
     setPictureFile(null);
     setPicturePreview(null);
+    // (★★추가★★) 폼 데이터에도 이미지 삭제 요청 플래그를 심어둡니다.
+    // 이는 서버 요청 시 picture_url: "null"을 보내기 위한 상태 관리입니다.
+    setFormData((prev) => ({ ...prev, picture_url: "null" }));
   };
 
   const handleSubmit = (e) => {
@@ -160,7 +168,7 @@ const ProfileEdit = ({ profile, token, queryClient }) => {
     }
   };
 
-  if (!profile) return <div>프로필 로딩 중...</div>; // 로딩 중 UI 개선
+  if (!profile && formData === null) return <div>프로필 로딩 중...</div>; // 로딩 중 UI 개선
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 p-4 border rounded-md ">
@@ -170,11 +178,20 @@ const ProfileEdit = ({ profile, token, queryClient }) => {
           프로필 사진
         </label>
         <div className="flex items-center gap-4">
-          <img
+          {picturePreview ? (
+            <img
+              src={picturePreview}
+              alt="프로필"
+              className="w-20 h-20 object-cover rounded-full"
+            />
+          ) : (
+            <UserCircleIcon className="w-20 h-20 text-gray-400" />
+          )}{" "}
+          {/* <img
             src={picturePreview || "https://via.placeholder.com/80"}
             alt="프로필 미리보기"
             className="w-20 h-20 rounded-full object-cover border bg-gray-200"
-          />{" "}
+          />{" "} */}
           {/* 기본 배경색 추가 */}
           <div>
             <input
@@ -426,6 +443,7 @@ function MyProfilePage() {
     queryKey: ["myProfile"],
     queryFn: () => fetchMyProfile(token),
     enabled: !!token, // 토큰이 있을 때만 쿼리 실행
+    refetchOnWindowFocus: false,
   });
 
   if (isLoading)
@@ -436,6 +454,12 @@ function MyProfilePage() {
         프로필 정보를 불러오는 데 실패했습니다.
       </div>
     );
+  // (★★수정★★) 데이터가 없을 경우 렌더링하지 않음
+  if (!data) {
+    return (
+      <div className="text-center p-10">프로필 데이터를 찾을 수 없습니다.</div>
+    );
+  }
 
   // 데이터 구조 분해 (데이터가 없을 경우 대비)
   const {

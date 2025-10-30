@@ -45,6 +45,15 @@ function App() {
           />
 
           <Route
+            path="/cart"
+            element={
+              <ProtectedRoute>
+                <CartPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/my-profile"
             element={
               <ProtectedRoute>
@@ -53,14 +62,6 @@ function App() {
             }
           />
 
-          <Route
-            path="/cart"
-            element={
-              <ProtectedRoute>
-                <CartPage />
-              </ProtectedRoute>
-            }
-          />
           <Route
             path="/checkout"
             element={
@@ -112,8 +113,8 @@ function App() {
               </AdminRoute>
             }
           />
-        </Route>
-
+        </Route>{" "}
+        {/* 상단바 있는 페이지 목록 End */}
         <Route
           path="/learn/course/:courseId"
           element={
@@ -122,7 +123,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         {/* Navbar가 없는 독립적인 페이지 (로그인, 회원가입) */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />

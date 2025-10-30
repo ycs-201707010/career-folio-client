@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet } from "react-router-dom"; // 중첩 라우팅된 페이지 내용을 표시하는 컴포넌트
-import Navbar from "./navbar";
+import Navbar from "./Navbar";
 
 function Layout() {
   return (
