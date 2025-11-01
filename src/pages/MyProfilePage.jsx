@@ -1,3 +1,5 @@
+// ** 자신의 프로필을 편집하는 페이지 **
+
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
@@ -61,7 +63,7 @@ const deleteExperience = async ({ expId, token }) => {
 
 // --- 컴포넌트들 ---
 
-// 프로필 정보 수정 컴포넌트
+/** 프로필 정보 수정 컴포넌트 */
 const ProfileEdit = ({ profile, token, queryClient }) => {
   const [formData, setFormData] = useState({
     nickname: profile?.nickname || "",
@@ -476,11 +478,11 @@ function MyProfilePage() {
       {/* 배경색 추가 */}
       <h1 className="text-3xl font-bold text-gray-800">내 프로필 관리</h1>
       <ProfileEdit profile={profile} token={token} queryClient={queryClient} />
-      <ExperienceManager
+      {/* <ExperienceManager
         experiences={experiences}
         token={token}
         queryClient={queryClient}
-      />
+      /> */}
       {/* TODO: 다른 관리 컴포넌트 렌더링 */}
       {/* <EducationManager educations={educations} token={token} queryClient={queryClient} /> */}
       {/* <ProjectManager projects={projects} token={token} queryClient={queryClient} /> */}

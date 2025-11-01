@@ -20,6 +20,7 @@ import CheckoutPage from "./pages/CheckoutPage";
 import MyCoursesPage from "./pages/MyCoursesPage";
 import LecturePlayerPage from "./pages/LecturePlayerPage";
 import MyProfilePage from "./pages/MyProfilePage";
+import ResumeBuildPage from "./pages/ResumeBuildPage";
 
 // ... 다른 페이지 import ...
 
@@ -115,11 +116,21 @@ function App() {
           />
         </Route>{" "}
         {/* 상단바 있는 페이지 목록 End */}
+        {/* 강의 시청 페이지 */}
         <Route
           path="/learn/course/:courseId"
           element={
             <ProtectedRoute>
               <LecturePlayerPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* 이력서 빌더 페이지 */}
+        <Route
+          path="/my-resume"
+          element={
+            <ProtectedRoute>
+              <ResumeBuildPage />
             </ProtectedRoute>
           }
         />
