@@ -163,7 +163,10 @@ function Navbar() {
                       className="w-9 h-9 rounded-full overflow-hidden border-2 border-transparent hover:border-blue-500 transition focus:outline-none cursor-pointer"
                     />
                   ) : (
-                    <UserCircleIcon className="w-8 h-8 text-gray-400" />
+                    <UserCircleIcon
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="w-8 h-8 text-gray-400 rounded-full overflow-hidden border-2 border-transparent hover:border-blue-500 transition focus:outline-none cursor-pointer"
+                    />
                   )}
                   {/* <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}

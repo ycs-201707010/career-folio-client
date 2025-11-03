@@ -6,6 +6,9 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce"; // 3초 지연 훅
 import { UserCircleIcon } from "@heroicons/react/24/outline";
+// 이력서 PDF 저장 시 사용할 라이브러리
+// import jsPDF from "jspdf";
+// import html2canvas from "html2canvas";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -450,7 +453,7 @@ const ResumePreview = ({ draftData }) => {
 
   return (
     <div
-      className="p-8 md:p-12 bg-white shadow-lg h-full overflow-y-auto"
+      className="p-8 md:p-12 bg-white shadow-lg "
       style={{ width: "21cm", minHeight: "29.7cm" }}
     >
       {/* A4 비율 유지를 위해 width/minHeight 설정 */}
@@ -626,6 +629,52 @@ function ResumeBuildPage() {
     saveMutation.mutate({ resumeData: draftData, token });
   };
 
+  // PDF 로딩 상태
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
+
+  // PDF 저장 핸들러 함수
+  const handleExportToPDF = () => {
+    if (!draftData) return;
+
+    setIsPdfLoading(true);
+    console.log("[PDF] 서버에 PDF 생성 요청...");
+
+    axios
+      .post(
+        `${API_BASE_URL}/api/resume/download-pdf`,
+        { draftData: draftData }, // 현재 수정 중인 데이터를 서버로 전송
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: "blob", // 👈 응답을 바이너리 파일(blob)로 받음
+        }
+      )
+      .then((response) => {
+        // 4. 성공 시, 브라우저에서 다운로드 실행
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+
+        const username = draftData.profile.username || "user";
+        const fileName = `[이력서] ${username}.pdf`;
+        link.setAttribute("download", fileName); // 👈 동적 파일명 설정
+
+        document.body.appendChild(link);
+        link.click();
+
+        // 5. 메모리 정리
+        link.parentNode.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        console.log("[PDF] PDF 다운로드 성공.");
+      })
+      .catch((error) => {
+        console.error("PDF 다운로드 실패:", error);
+        alert("PDF를 생성하는 데 실패했습니다.");
+      })
+      .finally(() => {
+        setIsPdfLoading(false);
+      });
+  };
+
   if (isLoading || !draftData) {
     return <div className="text-center p-10">이력서 빌더를 불러오는 중...</div>;
   }
@@ -648,7 +697,14 @@ function ResumeBuildPage() {
       </div>
 
       {/* 3. 하단 저장 버튼 바 */}
-      <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg p-4 border-t flex justify-end z-20">
+      <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg p-4 border-t flex justify-end z-20 gap-4">
+        <button
+          onClick={handleExportToPDF}
+          disabled={isPdfLoading || saveMutation.isPending}
+          className="px-6 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700"
+        >
+          {isPdfLoading ? "PDF 생성 중..." : "PDF로 저장"}
+        </button>
         <button
           onClick={handleFinalSave}
           disabled={saveMutation.isPending}
