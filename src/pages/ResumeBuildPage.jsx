@@ -1,6 +1,6 @@
 // ** 이력서 실시간 빌더 페이지 **
 // src/pages/ResumeBuildPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
@@ -31,10 +31,24 @@ const bulkUpdateResume = async ({ resumeData, token }) => {
   return data;
 };
 
+const uploadResumePhoto = async ({ formData, token }) => {
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
+    },
+  };
+  const { data } = await axios.put(
+    `${API_BASE_URL}/api/profile/resume-photo`,
+    formData,
+    config
+  );
+  return data; // { resume_photo_url: "..." } 반환
+};
+
 // ----------------------------------------
 // --- 2. 왼쪽: 에디터 컴포넌트들 ---
 // ----------------------------------------
-// (간결함을 위해 ExperienceEditor만 예시로 작성)
 
 // 폼 인풋 스타일
 const inputStyle = "w-full p-2 border rounded text-sm";
@@ -87,6 +101,8 @@ const createAddHandler = (key, newItem, setDraftData) => () => {
 
 // 1. 개인정보 에디터
 const ProfileInfoEditor = ({ draftData, setDraftData }) => {
+  const { token } = useAuth(); // 👈 3. token 가져오기
+
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
     setDraftData((prev) => ({
@@ -96,25 +112,88 @@ const ProfileInfoEditor = ({ draftData, setDraftData }) => {
   };
 
   // TODO: 사진 업로드는 별도 핸들러 필요 (ProfileEdit.jsx 참조)
+  // 4. 파일 입력을 위한 ref 생성
+  const photoInputRef = useRef(null);
+
+  // 5. 사진 업로드 Mutation 생성
+  const photoMutation = useMutation({
+    mutationFn: uploadResumePhoto,
+    onSuccess: (data) => {
+      // 6. 성공 시, 서버가 반환한 새 URL로 draftData를 수동 업데이트
+      setDraftData((prev) => ({
+        ...prev,
+        profile: { ...prev.profile, resume_photo_url: data.resume_photo_url },
+      }));
+      alert("증명사진이 변경되었습니다.");
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || "사진 업로드 실패");
+    },
+  });
+
+  // 7. "사진 변경" 버튼 클릭 핸들러
+  const handlePhotoUploadClick = () => {
+    photoInputRef.current.click(); // 숨겨진 input[type=file]을 클릭
+  };
+
+  // 8. 파일이 실제로 선택되었을 때 실행되는 핸들러
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append("resume_photo", file); // 👈 API에서 받을 이름("resume_photo")
+
+      photoMutation.mutate({ formData, token });
+    }
+  };
 
   return (
     <FormSection title="기본 정보">
       <div className="flex items-center gap-4">
-        {draftData.profile.picture_url ? (
+        {draftData.profile.resume_photo_url ? (
           <img
-            src={`${API_BASE_URL}/${draftData.profile.picture_url}`}
+            src={`${API_BASE_URL}/${draftData.profile.resume_photo_url}`}
             alt="프로필"
-            className="w-20 h-20 object-cover rounded-full"
+            className="w-24 h-32 object-cover rounded-md border"
           />
         ) : (
-          <UserCircleIcon className="w-20 h-20 text-gray-400" />
+          <div className="w-24 h-32 bg-gray-200 rounded-md flex items-center justify-center">
+            <UserCircleIcon className="w-16 h-16 text-gray-400" />
+          </div>
         )}
-        <button className="text-sm text-blue-600 font-medium hover:underline">
-          사진 변경 (미구현)
-        </button>
+        <div>
+          {/* 9. 숨겨진 파일 입력 필드 */}
+          <input
+            type="file"
+            ref={photoInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept="image/png, image/jpeg"
+          />
+          <button
+            onClick={handlePhotoUploadClick} // 👈 핸들러 연결
+            disabled={photoMutation.isPending}
+            className="text-sm text-blue-600 font-medium hover:underline disabled:text-gray-400"
+          >
+            {photoMutation.isPending ? "업로드 중..." : "증명사진 변경"}
+          </button>
+        </div>
       </div>
+
       <div>
-        <label className={labelStyle}>이름 (수정불가)</label>
+        <label className={labelStyle}>이력서 제목</label>
+        <input
+          type="text"
+          name="resume_title"
+          value={draftData.profile.resume_title || ""}
+          onChange={handleProfileChange}
+          placeholder="예: 열정적인 프론트엔드 개발자"
+          className={inputStyle}
+        />
+      </div>
+
+      <div>
+        <label className={labelStyle}>이름 (수정 불가)</label>
         <input
           type="text"
           value={draftData.profile.username || ""}
@@ -122,32 +201,25 @@ const ProfileInfoEditor = ({ draftData, setDraftData }) => {
           className={`${inputStyle} bg-gray-100`}
         />
       </div>
+
       <div>
-        <label className={labelStyle}>닉네임</label>
-        <input
-          type="text"
-          name="nickname"
-          value={draftData.profile.nickname || ""}
+        <label className={labelStyle}>자기소개</label>
+        <textarea
+          name="introduction"
+          value={draftData.profile.introduction || ""}
           onChange={handleProfileChange}
+          placeholder="자신을 간략하게 소개해 주세요."
+          rows="5"
           className={inputStyle}
         />
       </div>
-      <div>
-        <label className={labelStyle}>한 줄 소개</label>
-        <input
-          type="text"
-          name="bio"
-          value={draftData.profile.bio || ""}
-          onChange={handleProfileChange}
-          className={inputStyle}
-        />
-      </div>
+
       <div>
         <label className={labelStyle}>공개 이메일</label>
         <input
           type="email"
           name="email"
-          value={draftData.profile.email || ""}
+          value={draftData.profile.resume_email || ""}
           onChange={handleProfileChange}
           className={inputStyle}
         />
@@ -157,7 +229,7 @@ const ProfileInfoEditor = ({ draftData, setDraftData }) => {
         <input
           type="tel"
           name="phone"
-          value={draftData.profile.phone || ""}
+          value={draftData.profile.resume_phone || ""}
           onChange={handleProfileChange}
           className={inputStyle}
         />
@@ -461,30 +533,41 @@ const ResumePreview = ({ draftData }) => {
       {/* 헤더: 이름, 사진, 연락처 */}
       <header className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-gray-800">
+          <h1 class="text-4xl font-bold text-gray-800 mb-3">
+            {profile.resume_title}
+          </h1>
+          <h1 className="text-3xl font-bold text-gray-800">
             {profile.username}
           </h1>
-          <h2 className="text-xl font-light text-blue-600">
+          {/* <h2 className="text-xl font-light text-blue-600">
             {profile.nickname}
-          </h2>
-          <p className="text-sm text-gray-600 mt-2">{profile.bio}</p>
+          </h2> */}
+
+          <div class="mt-4 space-y-1 text-sm text-gray-600">
+            {profile.email && <p>📧 {profile.email}</p>}
+            {profile.phone && <p>📞 {profile.phone}</p>}
+            {profile.address && <p>📍 {profile.address}</p>}
+          </div>
         </div>
         {profile.picture_url && (
           <img
-            src={`${API_BASE_URL}/${profile.picture_url}`}
+            src={`${API_BASE_URL}/${profile.resume_photo_url}`}
             alt="증명사진"
             className="w-28 h-36 object-cover rounded-md border-2 border-gray-100"
           />
         )}
       </header>
 
-      {/* 연락처 */}
-      <section className="mb-8 border-t pt-4">
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-700">
-          {profile.email && <span>📧 {profile.email}</span>}
-          {profile.phone && <span>📞 {profile.phone}</span>}
-          {profile.address && <span>📍 {profile.address}</span>}
-        </div>
+      {/* 자기소개 */}
+      <section class="mb-8">
+        <h3 class="text-2xl font-bold text-gray-800 border-b-2 border-gray-300 pb-1 mb-3">
+          자기소개
+        </h3>
+        <p class="text-sm whitespace-pre-wrap">
+          {profile.introduction && (
+            <p class="text-sm whitespace-pre-wrap">{profile.introduction}</p>
+          )}
+        </p>
       </section>
 
       {/* 경력 */}

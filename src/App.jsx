@@ -21,6 +21,7 @@ import MyCoursesPage from "./pages/MyCoursesPage";
 import LecturePlayerPage from "./pages/LecturePlayerPage";
 import MyProfilePage from "./pages/MyProfilePage";
 import ResumeBuildPage from "./pages/ResumeBuildPage";
+import ProfilePage from "./pages/ProfilePage";
 
 // ... 다른 페이지 import ...
 
@@ -34,6 +35,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/courses" element={<CourseListPage />} />
           <Route path="/course/:courseId" element={<CourseDetailPage />} />
+          <Route path="/profile/:id" element={<ProfilePage />}></Route>
 
           {/* 로그인이 필요한 페이지 */}
           <Route
