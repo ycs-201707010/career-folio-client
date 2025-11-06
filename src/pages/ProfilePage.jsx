@@ -2,49 +2,51 @@ import React from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext"; // 👈 1. 현재 로그인한 유저 정보
+import { useAuth } from "../context/AuthContext";
+import { UserCircleIcon } from "@heroicons/react/24/outline"; // 👈 기본 아이콘 추가
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
-// 2. 새 API 호출 함수
+// API 호출 함수 (수정 없음)
 const fetchPublicProfile = async (id) => {
   const { data } = await axios.get(`${API_BASE_URL}/api/profile/${id}`);
   return data;
 };
 
-// 3. GitHub 스타일 레이아웃 (제안)
-const ProfileLayout = ({ profileData }) => {
-  const { profile, experiences, educations, projects, skills } = profileData;
+// ----------------------------------------
+// --- 프로필 레이아웃 컴포넌트 (수정됨) ---
+// ----------------------------------------
+const ProfileLayout = ({ profileData, isMyProfile }) => {
+  // 👇 "경력"과 "기술"만 남깁니다.
+  const { profile, experiences, skills } = profileData;
 
-  // 👇 뱃지 시스템이 연동될 완벽한 위치
-  const badges = []; // TODO: API에서 뱃지 정보도 가져와야 함
+  // 👇 TODO: API에서 뱃지 정보도 가져와야 함
+  const badges = []; // (일단 빈 배열로 둡니다)
+
+  // 날짜 포맷팅 (경력 표시용)
+  const formatDate = (dateStr) => (dateStr ? dateStr.split("T")[0] : "");
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 flex gap-8">
-      {/* 3-1. 왼쪽 사이드바 (프로필 카드) */}
-      <aside className="w-1/3 space-y-4">
-        {profile.resume_photo_url ? (
+    <div className="max-w-6xl mx-auto p-4 md:p-8 flex flex-col md:flex-row gap-8">
+      {/* 1. 왼쪽 사이드바 (프로필 카드) */}
+      <aside className="w-full md:w-1/3 space-y-4">
+        {/* --- 👇 [수정됨] resume_photo_url -> picture_url --- */}
+        {profile.picture_url ? (
           <img
-            src={`${API_BASE_URL}/${profile.resume_photo_url}`}
+            src={`${API_BASE_URL}/${profile.picture_url}`}
             alt="프로필 사진"
-            className="w-full rounded-full border-4 border-gray-200"
+            className="w-full rounded-full border-4 border-gray-200 aspect-square object-cover" // 1:1 비율
           />
         ) : (
-          <div className="w-full pt-[100%] bg-gray-200 rounded-full" /> // 1:1 비율
+          <UserCircleIcon className="w-full text-gray-300" /> // 1:1 비율 기본 아이콘
         )}
-        <h1 className="text-3xl font-bold">{profile.username}</h1>
-        <p className="text-xl text-gray-600">{profile.nickname}</p>
+        {/* --- [수정 완료] --- */}
+
+        <h1 className="text-3xl font-bold">{profile.nickname}</h1>
         <p className="text-sm">{profile.bio}</p>
 
         <hr />
-
-        {/* 연락처 정보 (공개용) */}
-        <div className="space-y-1 text-sm text-gray-700">
-          {profile.email && <p>📧 {profile.email}</p>}
-          {profile.phone && <p>📞 {profile.phone}</p>}
-          {profile.address && <p>📍 {profile.address}</p>}
-        </div>
 
         {/* 뱃지 전시 공간 */}
         <div className="space-y-2">
@@ -54,8 +56,8 @@ const ProfileLayout = ({ profileData }) => {
               badges.map((badge) => (
                 <img
                   key={badge.idx}
-                  src={badge.image_url}
-                  alt={badge.name}
+                  src={badge.image_url} // (뱃지 이미지 경로)
+                  alt={badge.badge_name}
                   className="w-12 h-12"
                   title={badge.description}
                 />
@@ -67,52 +69,109 @@ const ProfileLayout = ({ profileData }) => {
             )}
           </div>
         </div>
+
+        {/* --- 정보(이메일, 주소) --- */}
+        {/* (필요 시 GitHub 프로필 링크, 개인 웹사이트 링크 등을 추가할 수 있습니다) */}
+        <div className="space-y-1 text-sm text-gray-700">
+          {profile.email && <p>📧 {profile.email}</p>}
+        </div>
+
+        {/* 2. isMyProfile이 true일 때만 버튼을 렌더링 (aside 내부) */}
+        {isMyProfile && (
+          <div className="space-y-2">
+            <Link
+              to="/my-profile" // (닉네임, 아바타, bio 수정 페이지)
+              className="block w-full text-center px-4 py-2 bg-gray-600 text-white text-sm font-semibold rounded-md hover:bg-gray-700"
+            >
+              프로필 설정
+            </Link>
+            <Link
+              to="/resume-builder" // (이력서 빌더)
+              className="block w-full text-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700"
+            >
+              이력서 수정하기
+            </Link>
+          </div>
+        )}
       </aside>
 
-      {/* 3-2. 오른쪽 메인 콘텐츠 (이력서 항목) */}
-      <main className="w-2/3 space-y-8">
+      {/* 2. 오른쪽 메인 콘텐츠 */}
+      <main className="w-full md:w-2/3 space-y-8">
+        {/* --- 👇 [수정됨] "자기소개" 섹션 삭제 --- */}
+        {/* (자기소개는 왼쪽 bio로 충분) */}
+
+        {/* 경력 섹션 */}
         <section>
           <h2 className="text-2xl font-semibold border-b pb-2 mb-4">
-            자기소개
+            경력 (Experiences)
           </h2>
-          <p className="text-sm whitespace-pre-wrap">
-            {profile.introduction || "자기소개가 없습니다."}
-          </p>
-        </section>
-        <section>
-          <h2 className="text-2xl font-semibold border-b pb-2 mb-4">경력</h2>
           {experiences.length > 0 ? (
-            experiences.map((exp) => (
-              <div key={exp.idx}>... {exp.company_name} ...</div>
-            ))
+            <div className="space-y-4">
+              {experiences.map((exp) => (
+                <div key={exp.idx} className="border-b pb-2">
+                  <h4 className="text-lg font-semibold">{exp.position}</h4>
+                  <p className="text-md text-gray-700">{exp.company_name}</p>
+                  <p className="text-sm text-gray-500">
+                    {formatDate(exp.start_date)} ~{" "}
+                    {formatDate(exp.end_date) || "현재"}
+                  </p>
+                  <p className="text-sm mt-1 whitespace-pre-wrap">
+                    {exp.description}
+                  </p>
+                </div>
+              ))}
+            </div>
           ) : (
-            <p>경력 정보가 없습니다.</p>
+            <p className="text-sm text-gray-500">경력 정보가 없습니다.</p>
           )}
         </section>
-        {/* ... (학력, 프로젝트, 스킬 섹션 동일하게 렌더링) ... */}
+
+        {/* --- 👇 [수정됨] "학력", "프로젝트" 섹션 삭제 --- */}
+
+        {/* 보유 기술 섹션 */}
+        <section>
+          <h2 className="text-2xl font-semibold border-b pb-2 mb-4">
+            보유 기술 (Skills)
+          </h2>
+          {skills.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {skills.map((skill) => (
+                <span
+                  key={skill.idx || skill.temp_id}
+                  className="inline-block bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full mr-2 mb-2"
+                >
+                  {skill.skill_name}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">보유 기술 정보가 없습니다.</p>
+          )}
+        </section>
       </main>
     </div>
   );
 };
 
-// --- 메인 페이지 컴포넌트 ---
+// ----------------------------------------
+// --- 메인 페이지 컴포넌트 (수정됨) ---
+// ----------------------------------------
 function ProfilePage() {
-  // 4. URL 파라미터(/:id)에서 'id'를 가져옵니다. (예: 'king-gwangpil')
-  const { id } = useParams();
+  const { id } = useParams(); // URL 파라미터 (예: 'king-gwangpil')
+  const { user: currentUser } = useAuth(); // 로그인한 유저 (예: { userIdx: 2 })
 
-  // 5. 현재 로그인한 사용자의 정보를 가져옵니다.
-  //    (useAuth가 { ..., user: { id: 'my-id' } } 형태를 반환한다고 가정)
-  const { user: currentUser } = useAuth();
-
-  // 6. "내 프로필"인지 확인합니다.
-  const isMyProfile = currentUser && currentUser.id === id;
-
-  // 7. 'id'를 기반으로 프로필 데이터를 서버에 요청합니다.
+  // 'id'를 기반으로 서버에 데이터 요청
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["publicProfile", id], // 쿼리 키에 'id'를 포함
+    queryKey: ["publicProfile", id],
     queryFn: () => fetchPublicProfile(id),
-    staleTime: 1000 * 60 * 5, // 5분
+    staleTime: 1000 * 60 * 5,
   });
+
+  // --- 👇 [핵심 수정] ---
+  // "내 프로필"인지 확인하는 로직 변경
+  // (로그인한 유저의 'userIdx'와 지금 보는 프로필의 'user_idx'를 비교)
+  const isMyProfile =
+    currentUser && data && currentUser.userIdx === data.profile.user_idx;
 
   if (isLoading)
     return <div className="p-10 text-center">프로필 로딩 중...</div>;
@@ -125,22 +184,10 @@ function ProfilePage() {
 
   return (
     <div>
-      {/* 8. [핵심] 내 프로필일 때만 "수정" 버튼을 렌더링합니다. */}
-      {isMyProfile && (
-        <div className="bg-gray-100 p-4 border-b">
-          <div className="max-w-6xl mx-auto flex justify-end">
-            <Link
-              to="/resume-builder" // 이력서 수정 페이지로 이동
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700"
-            >
-              이력서 수정하기
-            </Link>
-          </div>
-        </div>
-      )}
+      {/* 8. [수정됨] isMyProfile이 true일 때 "수정" 버튼 렌더링 */}
 
-      {/* 9. 프로필 레이아웃을 렌더링합니다. */}
-      <ProfileLayout profileData={data} />
+      {/* 9. 프로필 레이아웃 렌더링 */}
+      <ProfileLayout profileData={data} isMyProfile={isMyProfile} />
     </div>
   );
 }

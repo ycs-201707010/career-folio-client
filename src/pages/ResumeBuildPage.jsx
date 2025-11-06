@@ -16,7 +16,7 @@ const API_BASE_URL =
 // --- API 함수들 ---
 const fetchMyProfile = async (token) => {
   const config = { headers: { Authorization: `Bearer ${token}` } };
-  const { data } = await axios.get(`${API_BASE_URL}/api/profile/me`, config);
+  const { data } = await axios.get(`${API_BASE_URL}/api/resume/me`, config);
   return data;
 };
 
@@ -219,7 +219,7 @@ const ProfileInfoEditor = ({ draftData, setDraftData }) => {
         <input
           type="email"
           name="email"
-          value={draftData.profile.resume_email || ""}
+          value={draftData.profile.email || ""}
           onChange={handleProfileChange}
           className={inputStyle}
         />
@@ -229,7 +229,7 @@ const ProfileInfoEditor = ({ draftData, setDraftData }) => {
         <input
           type="tel"
           name="phone"
-          value={draftData.profile.resume_phone || ""}
+          value={draftData.profile.phone || ""}
           onChange={handleProfileChange}
           className={inputStyle}
         />
@@ -533,7 +533,7 @@ const ResumePreview = ({ draftData }) => {
       {/* 헤더: 이름, 사진, 연락처 */}
       <header className="flex items-center justify-between mb-8">
         <div>
-          <h1 class="text-4xl font-bold text-gray-800 mb-3">
+          <h1 className="text-4xl font-bold text-gray-800 mb-3">
             {profile.resume_title}
           </h1>
           <h1 className="text-3xl font-bold text-gray-800">
@@ -543,7 +543,7 @@ const ResumePreview = ({ draftData }) => {
             {profile.nickname}
           </h2> */}
 
-          <div class="mt-4 space-y-1 text-sm text-gray-600">
+          <div className="mt-4 space-y-1 text-sm text-gray-600">
             {profile.email && <p>📧 {profile.email}</p>}
             {profile.phone && <p>📞 {profile.phone}</p>}
             {profile.address && <p>📍 {profile.address}</p>}
@@ -559,15 +559,14 @@ const ResumePreview = ({ draftData }) => {
       </header>
 
       {/* 자기소개 */}
-      <section class="mb-8">
-        <h3 class="text-2xl font-bold text-gray-800 border-b-2 border-gray-300 pb-1 mb-3">
+      <section className="mb-8">
+        <h3 className="text-2xl font-bold text-gray-800 border-b-2 border-gray-300 pb-1 mb-3">
           자기소개
         </h3>
-        <p class="text-sm whitespace-pre-wrap">
-          {profile.introduction && (
-            <p class="text-sm whitespace-pre-wrap">{profile.introduction}</p>
-          )}
-        </p>
+
+        {profile.introduction && (
+          <p className="text-sm whitespace-pre-wrap">{profile.introduction}</p>
+        )}
       </section>
 
       {/* 경력 */}
@@ -677,7 +676,7 @@ function ResumeBuildPage() {
 
   // 4-1. DB에서 최초 데이터 1회 로드
   const { data: initialData, isLoading } = useQuery({
-    queryKey: ["myProfile"],
+    queryKey: ["myResumeData"],
     queryFn: () => fetchMyProfile(token),
     enabled: !!token,
     refetchOnWindowFocus: false,

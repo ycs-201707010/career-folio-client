@@ -59,8 +59,6 @@ const deleteExperience = async ({ expId, token }) => {
   return expId; // 삭제된 ID 반환
 };
 
-// TODO: 학력, 프로젝트, 스킬 추가/수정/삭제 API 함수 추가
-
 // --- 컴포넌트들 ---
 
 /** 프로필 정보 수정 컴포넌트 */
