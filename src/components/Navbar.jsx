@@ -3,7 +3,13 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios"; // 로그인 상태 관리 훅
-import { ShoppingCartIcon, UserCircleIcon } from "@heroicons/react/24/outline"; // 아이콘 import
+import {
+  ShoppingCartIcon,
+  UserCircleIcon,
+  AcademicCapIcon, // (강의)
+  QuestionMarkCircleIcon, // (지식IN)
+  DocumentTextIcon, // (이력서)
+} from "@heroicons/react/24/outline"; // 아이콘 import
 
 const API_BASE_URL = "http://localhost:8080"; // API 주소
 
@@ -24,7 +30,10 @@ function Navbar() {
   // 로그인했을 때만 프로필 정보(사진 URL 등)를 가져옵니다.
   const { data: profile } = useQuery({
     queryKey: ["myProfile"],
-    queryFn: () => fetchMyProfileForNav(token),
+    queryFn: () => {
+      fetchMyProfileForNav(token);
+      console.log(user);
+    },
     enabled: !!user, // user(로그인 상태)가 있을 때만 쿼리 실행
     refetchOnWindowFocus: false,
     // 👇 이 부분이 핵심입니다!
@@ -54,76 +63,78 @@ function Navbar() {
     navigate("/"); // 로그아웃 후 홈으로 이동
   };
 
+  // NavLink 공통 스타일 함수 (활성/비활성)
+  const getNavLinkClass = ({ isActive }) =>
+    `flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+      isActive
+        ? "bg-blue-50 text-blue-600" // (활성 스타일 - YouTube/치지직 스타일)
+        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+    }`;
+
   return (
     <nav className="bg-white shadow-md relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex items-center h-16">
           {/* 왼쪽: 로고 및 주요 메뉴 */}
-          <div className="flex">
+          <div className="flex-shrink-0">
             <Link
               to="/"
-              className="flex-shrink-0 flex items-center font-bold text-xl hover:no-underline"
+              className="flex items-center font-bold text-xl hover:no-underline text-stone-950"
             >
-              CareerFolio
+              <img
+                src="../src/assets/careerFolio_logo.png"
+                alt="로고"
+                className="w-36"
+              />{" "}
+              {/* TODO : 로고 이미지로 변경 */}
             </Link>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+          </div>
+
+          {/* 중앙: 메인 메뉴 */}
+          <div className="hidden ml-6 sm:ml-6 sm:flex flex-1 justify-center sm:space-x-8">
+            <div className="flex space-x-4">
+              {/* 전체 강좌 */}
+              <NavLink to="/courses" className={getNavLinkClass}>
+                <AcademicCapIcon className="h-5 w-5" />
+                <span>전체 강좌</span>
+              </NavLink>
+
+              {/* 지식IN (Q&A) */}
+              <NavLink to="/qna" className={getNavLinkClass}>
+                <QuestionMarkCircleIcon className="h-5 w-5" />
+                <span>지식IN</span>
+              </NavLink>
+
+              {/* 이력서 빌더 */}
+              <NavLink to="/my-resume" className={getNavLinkClass}>
+                <DocumentTextIcon className="h-5 w-5" />
+                <span>이력서</span>
+              </NavLink>
+
+              {/* 관리자일 때만 보이는 메뉴 */}
+              {user?.role === "admin" && (
+                <NavLink to="/admin/dashboard" className={getNavLinkClass}>
+                  {/* (관리자용 아이콘) */}
+                  <span>관리자</span>
+                </NavLink>
+              )}
+            </div>
+
+            {/* 관리자일 때만 보이는 메뉴 */}
+            {user?.role === "admin" && (
               <NavLink
-                to="/courses"
+                to="/admin/dashboard"
                 className={({ isActive }) =>
-                  `inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium hover:no-underline ${
+                  `inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                     isActive
                       ? "border-blue-500 text-gray-900"
                       : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
                   }`
                 }
               >
-                전체 강좌
+                관리자
               </NavLink>
-              {/* 로그인 시 보이는 메뉴 */}
-              {user && (
-                <>
-                  <NavLink
-                    to="/my-courses"
-                    className={({ isActive }) =>
-                      `inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                        isActive
-                          ? "border-blue-500 text-gray-900"
-                          : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                      }`
-                    }
-                  >
-                    나의 학습
-                  </NavLink>
-                  <NavLink
-                    to="/instructor/dashboard"
-                    className={({ isActive }) =>
-                      `inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                        isActive
-                          ? "border-blue-500 text-gray-900"
-                          : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                      }`
-                    }
-                  >
-                    강의 관리
-                  </NavLink>
-                </>
-              )}
-              {/* 관리자일 때만 보이는 메뉴 */}
-              {user?.role === "admin" && (
-                <NavLink
-                  to="/admin/dashboard"
-                  className={({ isActive }) =>
-                    `inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isActive
-                        ? "border-blue-500 text-gray-900"
-                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    }`
-                  }
-                >
-                  관리자
-                </NavLink>
-              )}
-            </div>
+            )}
           </div>
 
           {/* 오른쪽: 로그인/로그아웃, 장바구니 등 */}
@@ -197,15 +208,42 @@ function Navbar() {
                             {user.nickname}
                           </p>
                         </div>
+
+                        {/* --- 👇 [수정] 메뉴 이동 --- */}
                         <Link
-                          to="/my-profile"
+                          to={`/profile/${user.id}`} // (Turn 77 기준: user.id가 로그인 ID)
                           onClick={() => setIsDropdownOpen(false)}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 no-underline hover:no-underline"
                           role="menuitem"
                         >
-                          내 프로필 관리
+                          내 프로필
                         </Link>
-                        {/* <Link to="/account-settings" ... >계정 설정</Link> */}
+                        <Link
+                          to="/my-courses"
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 no-underline hover:no-underline"
+                          role="menuitem"
+                        >
+                          나의 학습
+                        </Link>
+                        <Link
+                          to="/instructor/dashboard"
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 no-underline hover:no-underline"
+                          role="menuitem"
+                        >
+                          강좌 관리
+                        </Link>
+                        <Link
+                          to="/my-profile" // (프로필 설정 페이지)
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 no-underline hover:no-underline border-t"
+                          role="menuitem"
+                        >
+                          계정 설정
+                        </Link>
+                        {/* --- [수정 완료] --- */}
+
                         <button
                           onClick={handleLogout}
                           className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-gray-100"

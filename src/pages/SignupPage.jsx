@@ -1,7 +1,15 @@
+// ** 회원가입 페이지 **
+
 import { useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { CheckCircleIcon } from "@heroicons/react/24/solid"; // npm install @heroicons/react. 아이콘을 추가한다.
+import {
+  CheckCircleIcon,
+  AtSymbolIcon,
+  UserIcon,
+  KeyIcon,
+  IdentificationIcon,
+} from "@heroicons/react/24/solid"; // npm install @heroicons/react. 아이콘을 추가한다.
 import Swal from "sweetalert2"; // 커스텀 alert 창 라이브러리 임포트
 
 // API 기본 URL을 Railway 주소로 변경
@@ -17,14 +25,144 @@ const LoadingDots = () => (
   </div>
 );
 
-function SignupPage() {
+/** 약관 동의 컴포넌트 */
+const TOSScreen = ({ onAgree }) => {
+  const [agreed, setAgreed] = useState({
+    tos: false,
+    privacy: false,
+  });
+
+  const handleCheck = (e) => {
+    const { name, checked } = e.target;
+    setAgreed((prev) => ({ ...prev, [name]: checked }));
+  };
+
+  const handleAllAgree = (e) => {
+    const { checked } = e.target;
+    setAgreed({
+      tos: checked,
+      privacy: checked,
+    });
+  };
+
+  const isAllAgreed = agreed.tos && agreed.privacy;
+
+  return (
+    <div className="max-w-md mx-auto mt-10 p-6 md:p-8 border rounded-lg shadow-lg bg-white dark:bg-zinc-800">
+      <h2 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">
+        환영합니다!
+      </h2>
+      <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
+        CareerFolio 서비스 이용을 위해 약관에 동의해주세요.
+      </p>
+
+      <div className="space-y-4">
+        {/* 전체 동의 */}
+        <div className="relative flex items-start rounded-md border border-gray-300 dark:border-zinc-700 p-4">
+          <div className="flex h-6 items-center">
+            <input
+              id="all-agree"
+              name="all-agree"
+              type="checkbox"
+              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+              checked={isAllAgreed}
+              onChange={handleAllAgree}
+            />
+          </div>
+          <div className="ml-3 text-sm leading-6">
+            <label
+              htmlFor="all-agree"
+              className="font-bold text-gray-900 dark:text-white"
+            >
+              전체 동의
+            </label>
+            <p className="text-gray-500 dark:text-gray-400">
+              서비스 이용을 위한 필수 항목에 모두 동의합니다.
+            </p>
+          </div>
+        </div>
+
+        {/* 서비스 이용약관 (필수) */}
+        <div className="relative flex items-start p-4">
+          <div className="flex h-6 items-center">
+            <input
+              id="tos"
+              name="tos"
+              type="checkbox"
+              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+              checked={agreed.tos}
+              onChange={handleCheck}
+            />
+          </div>
+          <div className="ml-3 text-sm leading-6">
+            <label
+              htmlFor="tos"
+              className="font-medium text-gray-900 dark:text-gray-200"
+            >
+              [필수] 서비스 이용약관
+            </label>
+            <a
+              href="/terms"
+              target="_blank"
+              className="text-blue-600 hover:underline ml-2 text-xs"
+            >
+              내용 보기
+            </a>
+          </div>
+        </div>
+
+        {/* 개인정보 처리방침 (필수) */}
+        <div className="relative flex items-start p-4">
+          <div className="flex h-6 items-center">
+            <input
+              id="privacy"
+              name="privacy"
+              type="checkbox"
+              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+              checked={agreed.privacy}
+              onChange={handleCheck}
+            />
+          </div>
+          <div className="ml-3 text-sm leading-6">
+            <label
+              htmlFor="privacy"
+              className="font-medium text-gray-900 dark:text-gray-200"
+            >
+              [필수] 개인정보 수집 및 이용
+            </label>
+            <a
+              href="/privacy"
+              target="_blank"
+              className="text-blue-600 hover:underline ml-2 text-xs"
+            >
+              내용 보기
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={onAgree}
+        disabled={!isAllAgreed}
+        className={`w-full py-2.5 rounded text-white font-semibold transition mt-8 ${
+          isAllAgreed
+            ? "bg-blue-600 hover:bg-blue-700"
+            : "bg-gray-400 cursor-not-allowed"
+        }`}
+      >
+        동의하고 다음으로
+      </button>
+    </div>
+  );
+};
+
+/** 회원가입 정보 입력 컴포넌트 */
+const SignupFormScreen = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     emailCode: "",
-    phone1: "",
-    phone2: "",
-    phone3: "",
     id: "",
     password: "",
     confirmPassword: "",
@@ -34,19 +172,15 @@ function SignupPage() {
   // 페이지 이동
   const navigate = useNavigate();
 
-  // 입력 필드 참조(ref) 생성
-  const phoneInputRefs = useRef([]);
-
   // 항목별 유효성 상태
   const [valid, setValid] = useState({
     name: false,
-    email: false, // 이메일 형식
-    emailCode: false, // 이메일 인증 완료
-    phoneCombined: false,
+    emailFormat: false, // 이메일 형식
+    emailVerified: false, // 이메일 인증 완료
     idFormat: false, // 아이디 형식
     idAvailable: false, // 아이디 사용 가능
-    password: false,
-    confirmPassword: false,
+    passwordStrength: false,
+    passwordMatch: false,
   });
 
   // 유효성 검사 함수 정의
@@ -71,79 +205,39 @@ function SignupPage() {
   };
 
   const strength = getPasswordStrength(formData.password);
-  const isMatch =
-    formData.password && formData.password === formData.confirmPassword;
 
   // 값 변경 핸들러
   const handleChange = (e) => {
     // 실시간 유효성 검사 업데이트
     const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
 
-    // --- 전화번호 입력 처리 ---
-    if (name === "phone1" || name === "phone2" || name === "phone3") {
-      const numericValue = value.replace(/[^0-9]/g, ""); // 숫자만 허용
-      let maxLength;
-      let nextInputIndex;
-
-      if (name === "phone1") {
-        maxLength = 3;
-        nextInputIndex = 1;
-      } else {
-        // phone2, phone3
-        maxLength = 4;
-        nextInputIndex = name === "phone2" ? 2 : null; // phone3 다음은 없음
-      }
-
-      // 최대 길이 제한
-      const truncatedValue = numericValue.slice(0, maxLength);
-
-      setFormData((prev) => {
-        const updatedPhoneData = { ...prev, [name]: truncatedValue };
-        // 전화번호 전체 유효성 검사
-        const combinedValid =
-          updatedPhoneData.phone1.length === 3 &&
-          (updatedPhoneData.phone2.length === 3 ||
-            updatedPhoneData.phone2.length === 4) &&
-          updatedPhoneData.phone3.length === 4;
-        setValid((prevValid) => ({
-          ...prevValid,
-          phoneCombined: combinedValid,
-        }));
-        return updatedPhoneData;
-      });
-
-      // 자동 포커스 이동
-      if (truncatedValue.length === maxLength && nextInputIndex !== null) {
-        phoneInputRefs.current[nextInputIndex]?.focus();
-      }
-    } else {
-      setFormData({ ...formData, [name]: value });
-
-      if (name === "id") {
-        setValid((prev) => ({
-          ...prev,
-          idFormat: validateId(value),
-          idAvailable: false,
-        })); // id 변경 시 중복확인 리셋
-      } else if (name === "email") {
-        setValid((prev) => ({
-          ...prev,
-          emailFormat: validateEmail(value),
-          emailVerified: false,
-        })); // email 변경 시 인증 리셋
-      } else if (name === "password") {
-        const strength = getPasswordStrength(value);
-        setValid((prev) => ({
-          ...prev,
-          passwordStrength: strength.level !== "약함",
-          passwordMatch: value === formData.confirmPassword,
-        }));
-      } else if (name === "confirmPassword") {
-        setValid((prev) => ({
-          ...prev,
-          passwordMatch: value === formData.password,
-        }));
-      }
+    if (name === "name") {
+      setValid((prev) => ({ ...prev, name: value.trim().length > 0 }));
+    } else if (name === "id") {
+      setValid((prev) => ({
+        ...prev,
+        idFormat: validateId(value),
+        idAvailable: false,
+      })); // id 변경 시 중복확인 리셋
+    } else if (name === "email") {
+      setValid((prev) => ({
+        ...prev,
+        emailFormat: validateEmail(value),
+        emailVerified: false,
+      })); // email 변경 시 인증 리셋
+    } else if (name === "password") {
+      const strength = getPasswordStrength(value);
+      setValid((prev) => ({
+        ...prev,
+        passwordStrength: strength.level !== "약함",
+        passwordMatch: value === formData.confirmPassword,
+      }));
+    } else if (name === "confirmPassword") {
+      setValid((prev) => ({
+        ...prev,
+        passwordMatch: value === formData.password,
+      }));
     }
   };
 
@@ -251,11 +345,10 @@ function SignupPage() {
     valid.idAvailable &&
     valid.passwordStrength &&
     valid.passwordMatch &&
-    formData.name &&
-    valid.phoneCombined;
+    formData.name.length > 0;
 
   // **Submit시 실행할 함수.**
-  // 최종 회원가입 제출
+  /** 최종 회원가입 제출 */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAllValid)
@@ -266,7 +359,7 @@ function SignupPage() {
       });
     setIsLoading(true);
 
-    const { name, email, phone1, phone2, phone3, id, password } = formData;
+    const { name, email, id, password } = formData;
 
     // --- 전화번호 조합 ---
     const combinedPhoneNumber = `${phone1}-${phone2}-${phone3}`;
@@ -274,7 +367,6 @@ function SignupPage() {
     const requestData = {
       name,
       email,
-      phoneNumber: combinedPhoneNumber, // 조합된 전화번호 사용
       id,
       password,
     };
@@ -304,13 +396,21 @@ function SignupPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 border rounded-lg shadow-md bg-white dark:bg-zinc-800">
-      <form className="signup-form" onSubmit={handleSubmit}>
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">
+    <div className="max-w-md mx-auto mt-10 p-6 md:p-8 border rounded-lg shadow-lg bg-white dark:bg-zinc-800">
+      <form
+        className="signup-form flex flex-col justify-center"
+        onSubmit={handleSubmit}
+      >
+        {/* <h2 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">
           회원가입
-        </h2>
+        </h2> */}
+        <img
+          src="../src/assets/careerFolio_logo.png"
+          alt="로고"
+          className="w-64 self-center" // 자기만 가운데로 오는구나
+        />
 
-        {/* --- 이름 --- */}
+        {/* --- [수정] 이름 (아이콘 추가) --- */}
         <div className="mb-4">
           <label
             className="block mb-1 font-semibold text-sm text-gray-700 dark:text-gray-200"
@@ -318,18 +418,24 @@ function SignupPage() {
           >
             이름
           </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            placeholder="홍길동"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full border px-3 py-2 rounded dark:bg-zinc-700 dark:text-white"
-          />
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <IdentificationIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              placeholder="홍길동"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full border px-3 py-2 rounded dark:bg-zinc-700 dark:text-white pl-10"
+              required
+            />
+          </div>
         </div>
 
-        {/* --- 이메일 --- */}
+        {/* --- [수정] 이메일 (아이콘 추가) --- */}
         <div className="mb-4">
           <label
             className="block mb-1 font-semibold text-sm text-gray-700 dark:text-gray-200"
@@ -338,30 +444,33 @@ function SignupPage() {
             이메일
           </label>
           <div className="flex gap-2">
-            <input
-              className="flex-1 border px-3 py-2 rounded dark:bg-zinc-700 dark:text-white"
-              type="email"
-              id="email"
-              name="email"
-              placeholder="test@example.com"
-              value={formData.email}
-              onChange={handleChange}
-              readOnly={valid.emailVerified}
-            />
+            <div className="relative flex-1">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <AtSymbolIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                className="w-full border px-3 py-2 rounded dark:bg-zinc-700 dark:text-white pl-10"
+                type="email"
+                id="email"
+                name="email"
+                placeholder="test@example.com"
+                value={formData.email}
+                onChange={handleChange}
+                readOnly={valid.emailVerified}
+              />
+            </div>
             <button
               type="button"
               className={`px-3 py-1 w-24 flex justify-center items-center rounded text-sm transition-colors duration-15 dark:bg-zinc-600 dark:text-white ${
                 valid.emailFormat && !valid.emailVerified
                   ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
+                  : "bg-gray-400 cursor-not-allowed"
               }`}
-              // 이메일 형식이 맞고, 아직 인증 전이며, 로딩 중이 아닐 때만 활성화
               disabled={
                 !valid.emailFormat || valid.emailVerified || isSendingCode
               }
               onClick={handleSendCode}
             >
-              {/* 로딩 상태에 따라 다른 내용 표시 */}
               {isSendingCode ? (
                 <LoadingDots />
               ) : valid.emailVerified ? (
@@ -378,7 +487,7 @@ function SignupPage() {
           )}
         </div>
 
-        {/* --- 인증코드 --- */}
+        {/* --- [수정] 인증코드 (UI 일관성) --- */}
         <div className="mb-6">
           <label className="block mb-1 font-semibold text-sm text-gray-700 dark:text-gray-200">
             이메일 인증코드
@@ -387,22 +496,28 @@ function SignupPage() {
             <input
               type="text"
               name="emailCode"
+              placeholder="6자리 숫자"
               value={formData.emailCode}
               onChange={handleChange}
               className="flex-1 border px-3 py-2 rounded dark:bg-zinc-700 dark:text-white"
               readOnly={valid.emailVerified}
+              maxLength={6}
             />
             <button
               type="button"
               className={`px-3 py-1 w-24 rounded text-sm dark:bg-zinc-600 dark:text-white ${
                 formData.emailCode.length > 0 && !valid.emailVerified
                   ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
+                  : "bg-gray-400 cursor-not-allowed"
               }`}
               disabled={formData.emailCode.length === 0 || valid.emailVerified}
               onClick={handleVerifyCode}
             >
-              코드 확인
+              {valid.emailVerified ? (
+                <CheckCircleIcon className="h-5 w-5" />
+              ) : (
+                "코드 확인"
+              )}
             </button>
           </div>
           {valid.emailVerified && (
@@ -412,66 +527,9 @@ function SignupPage() {
           )}
         </div>
 
-        {/* --- 전화번호 --- */}
-        <div className="mb-4">
-          <label
-            className="block mb-1 font-semibold text-sm text-gray-700 dark:text-gray-200"
-            htmlFor="phoneNumber"
-          >
-            전화번호
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              ref={(el) => (phoneInputRefs.current[0] = el)} // ref 연결
-              type="text" // type을 text로 변경 (숫자 외 입력 방지 로직은 handleChange에서 처리)
-              inputMode="numeric" // 모바일 키패드 숫자 우선
-              pattern="[0-9]*" // 숫자 패턴 명시 (선택적)
-              name="phone1"
-              maxLength="3"
-              placeholder="010"
-              value={formData.phone1}
-              onChange={handleChange}
-              className="w-1/3 border px-3 py-2 rounded dark:bg-zinc-700 dark:text-white text-center"
-              required
-            />
-            <span>-</span>
-            <input
-              ref={(el) => (phoneInputRefs.current[1] = el)}
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              name="phone2"
-              maxLength="4"
-              placeholder="1234"
-              value={formData.phone2}
-              onChange={handleChange}
-              className="w-1/3 border px-3 py-2 rounded dark:bg-zinc-700 dark:text-white text-center"
-              required
-            />
-            <span>-</span>
-            <input
-              ref={(el) => (phoneInputRefs.current[2] = el)}
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              name="phone3"
-              maxLength="4"
-              placeholder="5678"
-              value={formData.phone3}
-              onChange={handleChange}
-              className="w-1/3 border px-3 py-2 rounded dark:bg-zinc-700 dark:text-white text-center"
-              required
-            />
-          </div>
-          {(formData.phone1 || formData.phone2 || formData.phone3) &&
-            !valid.phoneCombined && (
-              <p className="text-sm text-red-500 mt-1">
-                전화번호 최대 11자리를 모두 입력해주세요.
-              </p>
-            )}
-        </div>
+        {/* --- [삭제] 전화번호 --- */}
 
-        {/* --- 아이디 --- */}
+        {/* --- [수정] 아이디 (아이콘 추가) --- */}
         <div className="mb-4">
           <label
             className="block mb-1 font-semibold text-sm text-gray-700 dark:text-gray-200"
@@ -480,27 +538,36 @@ function SignupPage() {
             로그인 ID
           </label>
           <div className="flex gap-2">
-            <input
-              type="text"
-              id="id"
-              name="id"
-              placeholder="영문/숫자 4~16자"
-              value={formData.id}
-              onChange={handleChange}
-              className="flex-1 border px-3 py-2 rounded dark:bg-zinc-700 dark:text-white"
-              readOnly={valid.idAvailable}
-            />
+            <div className="relative flex-1">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <UserIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                id="id"
+                name="id"
+                placeholder="영문/숫자 4~16자"
+                value={formData.id}
+                onChange={handleChange}
+                className="w-full border px-3 py-2 rounded dark:bg-zinc-700 dark:text-white pl-10"
+                readOnly={valid.idAvailable}
+              />
+            </div>
             <button
               type="button"
               className={`px-3 py-1 w-24 rounded text-sm dark:bg-zinc-600 dark:text-white ${
                 valid.idFormat && !valid.idAvailable
                   ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
+                  : "bg-gray-400 cursor-not-allowed"
               }`}
               disabled={!valid.idFormat || valid.idAvailable}
               onClick={checkDuplicate}
             >
-              중복 확인
+              {valid.idAvailable ? (
+                <CheckCircleIcon className="h-5 w-5" />
+              ) : (
+                "중복 확인"
+              )}
             </button>
           </div>
           {valid.idAvailable && (
@@ -510,7 +577,7 @@ function SignupPage() {
           )}
         </div>
 
-        {/* --- 비밀번호 --- */}
+        {/* --- [수정] 비밀번호 (아이콘 추가) --- */}
         <div className="mb-4">
           <label
             className="block mb-1 font-semibold text-sm text-gray-700 dark:text-gray-200"
@@ -518,23 +585,28 @@ function SignupPage() {
           >
             비밀번호
           </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="비밀번호"
-            value={formData.password}
-            onChange={handleChange}
-            className={`w-full px-3 py-2 rounded border focus:outline-none dark:bg-zinc-700 ${
-              strength.level === "강함"
-                ? "border-green-500"
-                : strength.level === "보통"
-                ? "border-yellow-400"
-                : formData.password
-                ? "border-red-500"
-                : "border-gray-300"
-            }`}
-          />
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <KeyIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="비밀번호"
+              value={formData.password}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 rounded border focus:outline-none dark:bg-zinc-700 pl-10 ${
+                strength.level === "강함"
+                  ? "border-green-500"
+                  : strength.level === "보통"
+                  ? "border-yellow-400"
+                  : formData.password
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+          </div>
           {formData.password.length > 0 && (
             <p className={`text-sm mt-1 ${strength.color}`}>
               보안 수준: {strength.level}
@@ -542,47 +614,69 @@ function SignupPage() {
           )}
         </div>
 
-        {/* --- 비밀번호 확인 --- */}
-        <div className="mb-4 relative">
+        {/* --- [수정] 비밀번호 확인 (아이콘 추가) --- */}
+        <div className="mb-6 relative">
           <label
             className="block mb-1 font-semibold text-sm text-gray-700 dark:text-gray-200"
             htmlFor="confirmPassword"
           >
             비밀번호 확인
           </label>
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            placeholder="비밀번호 확인"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className={`w-full px-3 py-2 rounded border focus:outline-none dark:bg-zinc-700 transition-all duration-300 ${
-              valid.passwordMatch
-                ? "border-green-400"
-                : formData.confirmPassword
-                ? "border-red-400"
-                : "border-gray-300"
-            }`}
-          />
-          {valid.passwordMatch && formData.confirmPassword && (
-            <CheckCircleIcon className="w-5 h-5 text-green-500 absolute right-3 top-9" />
-          )}
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <KeyIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              placeholder="비밀번호 확인"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 rounded border focus:outline-none dark:bg-zinc-700 transition-all duration-300 pl-10 ${
+                valid.passwordMatch
+                  ? "border-green-400"
+                  : formData.confirmPassword
+                  ? "border-red-400"
+                  : "border-gray-300"
+              }`}
+            />
+            {valid.passwordMatch && formData.confirmPassword && (
+              <CheckCircleIcon className="w-5 h-5 text-green-500 absolute right-3 top-2.5" />
+            )}
+          </div>
         </div>
 
         <button
           type="submit"
           disabled={!isAllValid || isLoading}
-          className={`w-full py-2 rounded text-white transition ${
+          className={`w-full py-2.5 rounded text-white font-semibold transition ${
             isAllValid
               ? "bg-blue-600 hover:bg-blue-700"
-              : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
+              : "bg-gray-400 cursor-not-allowed"
           }`}
         >
           {isLoading ? "가입 처리 중..." : "가입하기"}
         </button>
       </form>
     </div>
+  );
+};
+
+// ----------------------------------------
+// --- 메인 페이지 컴포넌트 ---
+// ----------------------------------------
+function SignupPage() {
+  const [step, setStep] = useState(1); // 1: 약관, 2: 폼
+
+  const handleAgreeAndNext = () => {
+    setStep(2);
+  };
+
+  return step === 1 ? (
+    <TOSScreen onAgree={handleAgreeAndNext} />
+  ) : (
+    <SignupFormScreen />
   );
 }
 
