@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import Swal from "sweetalert2"; // 커스텀 alert 창 라이브러리 임포트
 
 // Dnd-kit 라이브러리 import (DragOverlay 추가)
 import {
@@ -800,7 +801,14 @@ function SectionManager({ course: initialCourse }) {
   const [newSectionTitle, setNewSectionTitle] = useState("");
   const handleAddSection = (e) => {
     e.preventDefault();
-    if (!newSectionTitle.trim()) return;
+    if (!newSectionTitle.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "내용이 없어요!",
+        text: "섹션의 제목을 입력해주세요! ㅜ.ㅜ",
+      });
+      return;
+    }
     sectionMutation.mutate({
       courseId: initialCourse.idx,
       title: newSectionTitle,

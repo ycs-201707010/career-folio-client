@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import SectionManager from "../components/SectionManager";
+import StatusBadge from "../components/StatusBadge";
 import Swal from "sweetalert2"; // 커스텀 alert 창 라이브러리 임포트
 
 const API_BASE_URL = "http://localhost:8080";
@@ -42,7 +43,7 @@ const updateCourseDetails = async ({ courseId, formData, token }) => {
 
 function CourseManagePage() {
   const { courseId } = useParams(); // URL 파라미터에서 courseId를 가져옵니다.
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const queryClient = useQueryClient();
 
   // useQuery 훅 사용
@@ -118,26 +119,34 @@ function CourseManagePage() {
     // 저장 시 thumbnail_url: 'null'을 보내 삭제 처리
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = (e, requestedStatus = null) => {
     e.preventDefault();
-    // FormData 사용
     const formData = new FormData();
+
+    // 1. 텍스트 필드 추가 (기존과 동일)
     Object.keys(editForm).forEach((key) => {
-      // discount_price가 비어있으면 null로 보내도록 처리
-      if (
-        key === "discount_price" &&
-        (editForm[key] === "" || editForm[key] === null)
-      ) {
-        formData.append(key, "null"); // 백엔드에서 null로 처리하도록 문자열 'null' 전송
-      } else if (editForm[key] !== null && editForm[key] !== undefined) {
-        formData.append(key, editForm[key]);
-      }
+      // ... (discount_price 'null' 처리 로직 동일) ...
+      formData.append(key, editForm[key]);
     });
+
+    // 2. 썸네일 파일/삭제 여부 추가 (기존과 동일)
     if (thumbnailFile) {
       formData.append("thumbnail", thumbnailFile);
     } else if (thumbnailPreview === null && course.thumbnail_url) {
-      // 미리보기가 없고 기존 썸네일이 있었다면 -> 삭제 요청
       formData.append("thumbnail_url", "null");
+    }
+
+    // 3. [신규] 강좌 상태(status) 추가
+    //    (만약 "게시하기" 버튼을 눌렀다면)
+    if (requestedStatus) {
+      let finalStatus = requestedStatus; // 'published' 요청
+
+      // [Turn 92] 하이브리드 모델 로직
+      // "게시" 요청인데, "미검증" 강사라면?
+      if (requestedStatus === "published" && !user.is_verified_instructor) {
+        finalStatus = "pending"; // "검수 대기"로 변경
+      }
+      formData.append("status", finalStatus);
     }
 
     mutation.mutate({ courseId, formData, token });
@@ -158,19 +167,69 @@ function CourseManagePage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <nav className="text-sm mb-4">
-        <Link to="/instructor" className="text-blue-600 hover:underline">
+        <Link
+          to="/instructor/dashboard"
+          className="text-blue-600 hover:underline"
+        >
           강사 대시보드
         </Link>
         <span className="mx-2">/</span>
         <span>강좌 관리</span>
       </nav>
       <div className="bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
-        <p className="text-gray-500 mb-6">상태: {course.status}</p>
+        <div className="flex justify-between mb-5">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
+            <p className="text-gray-500 mb-6">
+              <StatusBadge status={course.status} />
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 flex-shrink-0">
+            {/* --- 👇 [핵심 수정] ---
+            "변경사항 저장" 버튼은 "게시하기"와 "초안으로 변경" 버튼과
+            항상 "공존"해야 합니다.
+          */}
+            <button
+              onClick={(e) => handleFormSubmit(e, "draft")} // 👈 'draft'로 명시
+              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+              disabled={mutation.isPending}
+              title="모든 변경 내용을 '초안'으로 저장합니다." // 👈 툴팁 추가
+            >
+              {mutation.isPending ? "저장 중..." : "초안으로 저장"}
+            </button>
+
+            {/* 'published' 상태가 아닐 때만 "게시하기" 버튼 보임 */}
+            {course.status !== "published" && (
+              <button
+                onClick={(e) => handleFormSubmit(e, "published")}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                disabled={mutation.isPending}
+              >
+                {/* [Turn 92]의 서버 로직이 'is_verified_instructor'를
+                  확인하여 'pending' 또는 'published'로 자동 처리합니다.
+              */}
+                {user.is_verified_instructor
+                  ? "즉시 게시하기"
+                  : "검수 요청하기"}
+              </button>
+            )}
+
+            {/* 'published' 상태일 때만 "보관" 버튼 보임 (선택적) */}
+            {course.status === "published" && (
+              <button
+                onClick={(e) => handleFormSubmit(e, "archived")} // 👈 'archived'
+                className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
+                disabled={mutation.isPending}
+              >
+                강좌 숨기기
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* 강좌 정보 수정 폼 */}
         <form
-          onSubmit={handleFormSubmit}
+          // onSubmit={handleFormSubmit}
           className="mb-8 p-6 border rounded-lg space-y-4"
         >
           <h2 className="text-xl font-semibold text-gray-700">
@@ -259,13 +318,13 @@ function CourseManagePage() {
           </div>
 
           <div className="text-right">
-            <button
+            {/* <button
               type="submit"
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               disabled={mutation.isPending}
             >
               {mutation.isPending ? "저장 중..." : "정보 저장"}
-            </button>
+            </button> */}
           </div>
         </form>
 

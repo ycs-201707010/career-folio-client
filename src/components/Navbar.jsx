@@ -9,6 +9,7 @@ import {
   AcademicCapIcon, // (강의)
   QuestionMarkCircleIcon, // (지식IN)
   DocumentTextIcon, // (이력서)
+  WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline"; // 아이콘 import
 
 const API_BASE_URL = "http://localhost:8080"; // API 주소
@@ -30,10 +31,8 @@ function Navbar() {
   // 로그인했을 때만 프로필 정보(사진 URL 등)를 가져옵니다.
   const { data: profile } = useQuery({
     queryKey: ["myProfile"],
-    queryFn: () => {
-      fetchMyProfileForNav(token);
-      console.log(user);
-    },
+    queryFn: () => fetchMyProfileForNav(token),
+
     enabled: !!user, // user(로그인 상태)가 있을 때만 쿼리 실행
     refetchOnWindowFocus: false,
     // 👇 이 부분이 핵심입니다!
@@ -115,26 +114,11 @@ function Navbar() {
               {user?.role === "admin" && (
                 <NavLink to="/admin/dashboard" className={getNavLinkClass}>
                   {/* (관리자용 아이콘) */}
+                  <WrenchScrewdriverIcon className="w-5 h-5"></WrenchScrewdriverIcon>
                   <span>관리자</span>
                 </NavLink>
               )}
             </div>
-
-            {/* 관리자일 때만 보이는 메뉴 */}
-            {user?.role === "admin" && (
-              <NavLink
-                to="/admin/dashboard"
-                className={({ isActive }) =>
-                  `inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    isActive
-                      ? "border-blue-500 text-gray-900"
-                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                  }`
-                }
-              >
-                관리자
-              </NavLink>
-            )}
           </div>
 
           {/* 오른쪽: 로그인/로그아웃, 장바구니 등 */}
