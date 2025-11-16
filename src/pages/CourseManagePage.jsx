@@ -1,7 +1,7 @@
 // ** 전체 강좌의 섹션 및 동영상 순서 등을 변경하는 상세 수정 페이지 **
 
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
@@ -41,10 +41,21 @@ const updateCourseDetails = async ({ courseId, formData, token }) => {
   return data;
 };
 
+// [신규] 강좌 삭제 API 함수
+const deleteCourse = async ({ courseId, token }) => {
+  const config = { headers: { Authorization: `Bearer ${token}` } };
+  const { data } = await axios.delete(
+    `${API_BASE_URL}/api/courses/${courseId}`,
+    config
+  );
+  return data;
+};
+
 function CourseManagePage() {
   const { courseId } = useParams(); // URL 파라미터에서 courseId를 가져옵니다.
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // useQuery 훅 사용
   // data, isLoading, isError 등의 상태를 자동으로 관리해줍니다.
@@ -89,6 +100,43 @@ function CourseManagePage() {
       alert(err.response?.data?.message || "정보 수정에 실패했습니다.");
     },
   });
+
+  // [신규] 강좌 삭제 Mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteCourse,
+    onSuccess: (data) => {
+      Swal.fire("삭제 완료", data.message, "success");
+      // 삭제 성공 시, 강사 대시보드 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: ["myCourses"] });
+      // 강사 대시보드로 이동
+      navigate("/instructor/dashboard");
+    },
+    onError: (err) => {
+      Swal.fire(
+        "삭제 실패",
+        err.response?.data?.message || "오류 발생",
+        "error"
+      );
+    },
+  });
+
+  // [신규] 강좌 삭제 핸들러
+  const handleDeleteCourse = () => {
+    Swal.fire({
+      title: "정말 이 강좌를 삭제하시겠습니까?",
+      text: "강좌의 모든 섹션, 강의, 수강생 정보가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "삭제",
+      cancelButtonText: "취소",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate({ courseId, token });
+      }
+    });
+  };
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -330,6 +378,22 @@ function CourseManagePage() {
 
         {/* 커리큘럼(섹션, 강의)을 관리하는 UI */}
         <SectionManager course={course}></SectionManager>
+
+        {/* --- 👇 [신규] 강좌 삭제 영역 --- */}
+        <div className="mt-8 p-6 border border-red-500 rounded-lg bg-red-50">
+          <h2 className="text-xl font-semibold text-red-700">위험 구역</h2>
+          <p className="text-sm text-red-600 mt-2 mb-4">
+            이 강좌를 삭제하면 모든 관련 데이터(섹션, 강의, 수강평, 수강생
+            이력)가 삭제되며 복구할 수 없습니다.
+          </p>
+          <button
+            onClick={handleDeleteCourse}
+            disabled={deleteMutation.isPending}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400"
+          >
+            {deleteMutation.isPending ? "삭제 중..." : "이 강좌 삭제하기"}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -55,7 +55,7 @@ const EnrolledCourseCard = ({ course }) => {
         </div>
 
         <Link
-          to={`/learn/course/${course.idx}`}
+          to={`/learn/course/${course.course_idx}`}
           className="block w-full text-center mt-3 bg-gray-800 text-white font-semibold py-2 rounded-md hover:bg-gray-700 transition"
         >
           학습하기
