@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { UserCircleIcon } from "@heroicons/react/24/outline"; // 👈 기본 아이콘 추가
+import { UserCircleIcon, Cog6ToothIcon } from "@heroicons/react/24/outline"; // 👈 기본 아이콘 추가
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -90,6 +90,13 @@ const ProfileLayout = ({ profileData, isMyProfile }) => {
               className="block w-full text-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700"
             >
               이력서 수정하기
+            </Link>
+            <Link
+              to="/portfolio-settings"
+              className="block w-full text-center px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-md hover:bg-gray-50"
+            >
+              <Cog6ToothIcon className="h-5 w-5 inline-block -mt-1 mr-1" />
+              포트폴리오 설정
             </Link>
           </div>
         )}

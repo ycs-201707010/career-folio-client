@@ -1,11 +1,12 @@
 // ** 이력서 실시간 빌더 페이지 **
 // src/pages/ResumeBuildPage.jsx
 import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { useDebounce } from "../hooks/useDebounce"; // 3초 지연 훅
-import { UserCircleIcon } from "@heroicons/react/24/outline";
+import { UserCircleIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 // 이력서 PDF 저장 시 사용할 라이브러리
 // import jsPDF from "jspdf";
 // import html2canvas from "html2canvas";
@@ -779,21 +780,32 @@ function ResumeBuildPage() {
       </div>
 
       {/* 3. 하단 저장 버튼 바 */}
-      <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg p-4 border-t flex justify-end z-20 gap-4">
-        <button
-          onClick={handleExportToPDF}
-          disabled={isPdfLoading || saveMutation.isPending}
-          className="px-6 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700"
+      <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg p-4 border-t flex justify-between items-center z-20 gap-4">
+        {/* --- 👇 [신규] 포트폴리오 설정 버튼 (왼쪽) --- */}
+        <Link
+          to="/portfolio-settings"
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-md"
         >
-          {isPdfLoading ? "PDF 생성 중..." : "PDF로 저장"}
-        </button>
-        <button
-          onClick={handleFinalSave}
-          disabled={saveMutation.isPending}
-          className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-        >
-          {saveMutation.isPending ? "저장 중..." : "이력서 최종 저장"}
-        </button>
+          <Cog6ToothIcon className="h-5 w-5" />
+          포트폴리오 설정
+        </Link>
+
+        <div className="flex gap-4">
+          <button
+            onClick={handleExportToPDF}
+            disabled={isPdfLoading || saveMutation.isPending}
+            className="px-6 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700"
+          >
+            {isPdfLoading ? "PDF 생성 중..." : "PDF로 저장"}
+          </button>
+          <button
+            onClick={handleFinalSave}
+            disabled={saveMutation.isPending}
+            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+          >
+            {saveMutation.isPending ? "저장 중..." : "이력서 최종 저장"}
+          </button>
+        </div>
       </div>
     </div>
   );

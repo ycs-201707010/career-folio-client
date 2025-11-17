@@ -22,6 +22,8 @@ import LecturePlayerPage from "./pages/LecturePlayerPage";
 import MyProfilePage from "./pages/MyProfilePage";
 import ResumeBuildPage from "./pages/ResumeBuildPage";
 import ProfilePage from "./pages/ProfilePage";
+import PortfolioSettingsPage from "./pages/PortfolioSettingsPage";
+import PublicPortfolioPage from "./pages/PublicPortfolioPage";
 
 // ... 다른 페이지 import ...
 
@@ -136,9 +138,20 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* 포트폴리오 설정 페이지 */}
+        <Route
+          path="/portfolio-settings"
+          element={
+            <ProtectedRoute>
+              <PortfolioSettingsPage />
+            </ProtectedRoute>
+          }
+        />
         {/* Navbar가 없는 독립적인 페이지 (로그인, 회원가입) */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        {/* 포트폴리오 조회 페이지 */}
+        <Route path="/portfolio/:id" element={<PublicPortfolioPage />} />
       </Routes>
     </Router>
   );
