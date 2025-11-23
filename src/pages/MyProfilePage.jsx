@@ -6,12 +6,16 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { UserCircleIcon, CameraIcon } from "@heroicons/react/24/outline";
 import Swal from "sweetalert2";
+import MDEditor from "@uiw/react-md-editor";
+
+import ProfilePageSkeleton from "../components/skeleton/ProfilePageSkeleton.jsx";
 
 // 로컬 개발 시에는 로컬 서버 주소, 배포 시에는 배포된 서버 주소 사용
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 // --- API 호출 함수들 ---
+/** 내 프로필 내용을 서버로부터 불러옴 */
 const fetchMyProfile = async (token) => {
   const config = { headers: { Authorization: `Bearer ${token}` } };
   console.log("[API] Fetching My Profile...");
@@ -20,6 +24,7 @@ const fetchMyProfile = async (token) => {
   return data; // { profile: {...}, experiences: [...], educations: [...], etc. }
 };
 
+/** 프로필 내용(Readme.md 제외) 업데이트 API 함수 */
 const updateProfile = async ({ formData, token }) => {
   const config = {
     headers: {
@@ -34,6 +39,18 @@ const updateProfile = async ({ formData, token }) => {
     config
   );
   console.log("[API] Profile update response:", data);
+  return data;
+};
+
+/** README 저장하는 API */
+const updateReadme = async ({ readme, token }) => {
+  const config = { headers: { Authorization: `Bearer ${token}` } };
+  // (Turn 120에서 만든 API 호출)
+  const { data } = await axios.put(
+    `${API_BASE_URL}/api/profile/readme`,
+    { readme },
+    config
+  );
   return data;
 };
 
@@ -151,7 +168,7 @@ const ProfileEdit = ({ profile, token, queryClient }) => {
       console.log("Sending FormData:", Object.fromEntries(data.entries()));
       mutation.mutate({ formData: data, token });
     } else {
-      alert("변경된 내용이 없습니다.");
+      Swal.fire("변경 사항 없음", "변경된 내용이 없습니다.", "info");
       console.log("No changes detected, skipping mutation.");
     }
   };
@@ -161,9 +178,9 @@ const ProfileEdit = ({ profile, token, queryClient }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 ">
       {/* 1. 프로필 사진 섹션 */}
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center ">
         <div
-          className="relative group cursor-pointer"
+          className="relative group cursor-pointer mb-4"
           onClick={() => fileInputRef.current?.click()}
         >
           {picturePreview ? (
@@ -191,14 +208,14 @@ const ProfileEdit = ({ profile, token, queryClient }) => {
           />
         </div>
         <div className="flex flex-row gap-2 items-center">
-          <span className="text-sm text-gray-500 mt-3">
+          <span className="block text-sm text-gray-500 mt-3">
             프로필 사진을 변경하려면 클릭하세요
           </span>
           {picturePreview && (
             <button
               type="button"
               onClick={handleRemovePicture}
-              className="text-xs text-red-500 hover:underline"
+              className="mt-3 text-xs text-red-500 hover:underline"
             >
               사진 삭제
             </button>
@@ -288,10 +305,67 @@ const ProfileEdit = ({ profile, token, queryClient }) => {
   );
 };
 
+/** README 에디터 컴포넌트 */
+const ReadmeEditor = ({ initialValue, token, queryClient }) => {
+  const [value, setValue] = useState(
+    initialValue || "**나만의 멋진 소개를 작성해보세요!**"
+  );
+
+  const mutation = useMutation({
+    mutationFn: updateReadme,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["myProfile"] });
+      Swal.fire("저장 완료", "README를 성공적으로 저장했어요!", "success");
+    },
+    onError: (err) =>
+      Swal.fire("저장 실패", err.response?.data?.message, "success"),
+  });
+
+  const handleSave = () => {
+    mutation.mutate({ readme: value, token });
+  };
+
+  return (
+    <div className="space-y-4" data-color-mode="light">
+      {" "}
+      {/* 라이트 모드 강제 (Tailwind 충돌 방지) */}
+      <div className="flex justify-between items-center mb-2">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+            GitHub 스타일 프로필
+          </h3>
+          <p className="text-xs text-gray-400 mt-1">
+            마크다운 문법을 지원합니다.
+          </p>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={mutation.isPending}
+          className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-md hover:bg-green-700 disabled:bg-gray-400 transition"
+        >
+          {mutation.isPending ? "저장 중..." : "README 저장"}
+        </button>
+      </div>
+      {/* 마크다운 에디터 */}
+      <div className="border rounded-md overflow-hidden shadow-sm">
+        <MDEditor
+          value={value}
+          onChange={setValue}
+          height={600}
+          preview="live" // 편집과 미리보기를 동시에
+        />
+      </div>
+    </div>
+  );
+};
+
 // --- 메인 페이지 컴포넌트 ---
 function MyProfilePage() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
+
+  /** 탭 상태 관리 ('profile' | 'readme') */
+  const [activeTab, setActiveTab] = useState("profile");
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["myProfile"],
@@ -300,8 +374,7 @@ function MyProfilePage() {
     refetchOnWindowFocus: false,
   });
 
-  if (isLoading)
-    return <div className="text-center p-10">프로필 정보를 불러오는 중...</div>;
+  if (isLoading) return <ProfilePageSkeleton />;
   if (isError)
     return (
       <div className="text-center p-10 text-red-500">
@@ -325,11 +398,49 @@ function MyProfilePage() {
   } = data || {};
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8  min-h-screen">
-      {" "}
-      {/* 배경색 추가 */}
-      <h1 className="text-3xl font-bold text-gray-800">내 프로필 관리</h1>
-      <ProfileEdit profile={profile} token={token} queryClient={queryClient} />
+    <div className="bg-gray-100 min-h-screen py-10">
+      <div className="bg-white max-w-4xl mx-auto p-4 md:p-8 space-y-8 rounded-md min-h-screen">
+        {/* --- 👇 [신규] 탭 네비게이션 UI --- */}
+        <div className="flex border-b border-gray-200 mb-8">
+          <button
+            className={`px-6 py-3 font-medium text-sm transition-colors focus:outline-none rounded-none ${
+              activeTab === "profile"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+            onClick={() => setActiveTab("profile")}
+          >
+            기본 프로필
+          </button>
+          <button
+            className={`px-6 py-3 font-medium text-sm transition-colors focus:outline-none rounded-none ${
+              activeTab === "readme"
+                ? "border-b-2 border-blue-500 text-blue-600"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+            onClick={() => setActiveTab("readme")}
+          >
+            README 편집
+          </button>
+        </div>
+
+        {/* 배경색 추가 */}
+        {activeTab === "profile" && (
+          <ProfileEdit
+            profile={profile}
+            token={token}
+            queryClient={queryClient}
+          />
+        )}
+
+        {activeTab === "readme" && (
+          <ReadmeEditor
+            initialValue={data.profile.readme}
+            token={token}
+            queryClient={queryClient}
+          />
+        )}
+      </div>
     </div>
   );
 }

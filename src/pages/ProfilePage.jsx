@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { UserCircleIcon, Cog6ToothIcon } from "@heroicons/react/24/outline"; // 👈 기본 아이콘 추가
+// 👇 [신규] 마크다운 뷰어 import
+import MDEditor from "@uiw/react-md-editor";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -86,7 +88,7 @@ const ProfileLayout = ({ profileData, isMyProfile }) => {
               프로필 설정
             </Link>
             <Link
-              to="/resume-builder" // (이력서 빌더)
+              to="/my-resume" // (이력서 빌더)
               className="block w-full text-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700"
             >
               이력서 수정하기
@@ -104,8 +106,21 @@ const ProfileLayout = ({ profileData, isMyProfile }) => {
 
       {/* 2. 오른쪽 메인 콘텐츠 */}
       <main className="w-full md:w-2/3 space-y-8">
-        {/* --- 👇 [수정됨] "자기소개" 섹션 삭제 --- */}
-        {/* (자기소개는 왼쪽 bio로 충분) */}
+        {/* --- README.md 뷰어 --- */}
+        {profile.readme && (
+          <section className="bg-white py-4 rounded-lg border border-gray-200 shadow-sm">
+            <div className="text-sm font-light mb-4 ml-4">README.md</div>
+            <hr />
+
+            {/* data-color-mode="light"로 라이트 모드 고정 (Tailwind와 충돌 방지) */}
+            <div className="mt-4 mx-4" data-color-mode="light">
+              <MDEditor.Markdown
+                source={profile.readme}
+                style={{ backgroundColor: "white", color: "#333" }}
+              />
+            </div>
+          </section>
+        )}
 
         {/* 경력 섹션 */}
         <section>
