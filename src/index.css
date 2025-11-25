@@ -58,7 +58,7 @@ button:hover {
 input,
 textarea,
 select {
-  @apply border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-zinc-800 dark:text-white dark:border-zinc-600;
+  @apply border border-gray-300 rounded px-3 py-2 focus:outline-none  dark:bg-zinc-800 dark:text-white dark:border-zinc-600;
 }
 
 /* 1. 라이브러리의 CSS 변수 자체를 덮어씌웁니다. (가장 근본적인 해결책) */

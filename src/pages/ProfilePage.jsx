@@ -3,9 +3,9 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { UserCircleIcon, Cog6ToothIcon } from "@heroicons/react/24/outline"; // 👈 기본 아이콘 추가
-// 👇 [신규] 마크다운 뷰어 import
-import MDEditor from "@uiw/react-md-editor";
+import { UserCircleIcon, Cog6ToothIcon } from "@heroicons/react/24/outline"; //  아이콘 추가
+import ActivityGraph from "../components/ActivityGraph";
+import MDEditor from "@uiw/react-md-editor"; // 마크다운 뷰어
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -15,11 +15,18 @@ const fetchPublicProfile = async (id) => {
   const { data } = await axios.get(`${API_BASE_URL}/api/profile/${id}`);
   return data;
 };
+/** 사용자 활동량 데이터 API 호출 */
+const fetchUserActivity = async (id) => {
+  const { data } = await axios.get(
+    `${API_BASE_URL}/api/profile/${id}/activity`
+  );
+  return data; // { "2025-11-25": 5, ... }
+};
 
 // ----------------------------------------
 // --- 프로필 레이아웃 컴포넌트 (수정됨) ---
 // ----------------------------------------
-const ProfileLayout = ({ profileData, isMyProfile }) => {
+const ProfileLayout = ({ profileData, isMyProfile, activityData }) => {
   // 👇 "경력"과 "기술"만 남깁니다.
   const { profile, experiences, skills } = profileData;
 
@@ -122,6 +129,14 @@ const ProfileLayout = ({ profileData, isMyProfile }) => {
           </section>
         )}
 
+        {/* --- 활동량 잔디 UI --- */}
+        <section>
+          <h2 className="text-2xl font-semibold border-b pb-2 mb-4">
+            Activity
+          </h2>
+          <ActivityGraph activityData={activityData} />
+        </section>
+
         {/* 경력 섹션 */}
         <section>
           <h2 className="text-2xl font-semibold border-b pb-2 mb-4">
@@ -189,6 +204,12 @@ function ProfilePage() {
     staleTime: 1000 * 60 * 5,
   });
 
+  const { data: activityData } = useQuery({
+    queryKey: ["userActivity", id],
+    queryFn: () => fetchUserActivity(id),
+    enabled: !!id, // id가 있을 때만 실행
+  });
+
   // --- 👇 [핵심 수정] ---
   // "내 프로필"인지 확인하는 로직 변경
   // (로그인한 유저의 'userIdx'와 지금 보는 프로필의 'user_idx'를 비교)
@@ -209,7 +230,11 @@ function ProfilePage() {
       {/* 8. [수정됨] isMyProfile이 true일 때 "수정" 버튼 렌더링 */}
 
       {/* 9. 프로필 레이아웃 렌더링 */}
-      <ProfileLayout profileData={data} isMyProfile={isMyProfile} />
+      <ProfileLayout
+        profileData={data}
+        isMyProfile={isMyProfile}
+        activityData={activityData}
+      />
     </div>
   );
 }

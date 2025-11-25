@@ -24,6 +24,9 @@ import ResumeBuildPage from "./pages/ResumeBuildPage";
 import ProfilePage from "./pages/ProfilePage";
 import PortfolioSettingsPage from "./pages/PortfolioSettingsPage";
 import PublicPortfolioPage from "./pages/PublicPortfolioPage";
+import QnaListPage from "./pages/QnaListPage";
+import QnaWritePage from "./pages/QnaWritePage";
+import QnaDetailPage from "./pages/QnaDetailPage";
 
 // ... 다른 페이지 import ...
 
@@ -38,6 +41,8 @@ function App() {
           <Route path="/courses" element={<CourseListPage />} />
           <Route path="/course/:courseId" element={<CourseDetailPage />} />
           <Route path="/profile/:id" element={<ProfilePage />}></Route>
+          <Route path="/qna" element={<QnaListPage />} />
+          <Route path="/qna/:id" element={<QnaDetailPage />} />
 
           {/* 로그인이 필요한 페이지 */}
           <Route
@@ -105,6 +110,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <CourseManagePage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 지식IN 관련 페이지 */}
+          <Route
+            path="/qna/new"
+            element={
+              <ProtectedRoute>
+                <QnaWritePage />
               </ProtectedRoute>
             }
           />
