@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios"; // 로그인 상태 관리 훅
 import {
   ShoppingCartIcon,
@@ -10,7 +10,9 @@ import {
   QuestionMarkCircleIcon, // (지식IN)
   DocumentTextIcon, // (이력서)
   WrenchScrewdriverIcon,
+  BellIcon,
 } from "@heroicons/react/24/outline"; // 아이콘 import
+import { BellIcon as BellIconSolid } from "@heroicons/react/24/solid";
 
 const API_BASE_URL = "http://localhost:8080"; // API 주소
 
@@ -22,11 +24,36 @@ const fetchMyProfileForNav = async (token) => {
   return data;
 };
 
+// [신규] 알림 목록 조회
+const fetchNotifications = async (token) => {
+  const config = { headers: { Authorization: `Bearer ${token}` } };
+  const { data } = await axios.get(`${API_BASE_URL}/api/notifications`, config);
+  return data; // { notifications: [], unreadCount: 0 }
+};
+
+// [신규] 알림 읽음 처리
+const markAsRead = async ({ id, token }) => {
+  const config = { headers: { Authorization: `Bearer ${token}` } };
+  await axios.patch(`${API_BASE_URL}/api/notifications/${id}/read`, {}, config);
+};
+
+// [신규] 알림 모두 읽음 처리
+const markAllAsRead = async (token) => {
+  const config = { headers: { Authorization: `Bearer ${token}` } };
+  await axios.patch(`${API_BASE_URL}/api/notifications/read-all`, {}, config);
+};
+
 function Navbar() {
   const { user, logout, token } = useAuth(); // 현재 사용자 정보와 로그아웃 함수 가져오기
   const navigate = useNavigate();
+  const queryClient = useQueryClient(); // 👈 추가
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null); // 드롭다운 DOM 참조
+
+  // [신규] 알림 드롭다운 상태
+  const [isNotiOpen, setIsNotiOpen] = useState(false);
+  const notiRef = useRef(null);
 
   // 로그인했을 때만 프로필 정보(사진 URL 등)를 가져옵니다.
   const { data: profile } = useQuery({
@@ -41,11 +68,56 @@ function Navbar() {
     select: (data) => data.profile,
   });
 
+  // 2. [신규] 알림 데이터 조회 (Polling: 30초마다 갱신)
+  const { data: notiData } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => fetchNotifications(token),
+    enabled: !!user,
+    refetchInterval: 30000, // 30초마다 자동 갱신 (실시간성 확보)
+  });
+
+  const notifications = notiData?.notifications || [];
+  const unreadCount = notiData?.unreadCount || 0;
+
+  // 3. [신규] 읽음 처리 Mutation
+  const readMutation = useMutation({
+    mutationFn: markAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
+  const readAllMutation = useMutation({
+    mutationFn: () => markAllAsRead(token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
+  // 알림 클릭 핸들러
+  const handleNotificationClick = (noti) => {
+    // 1. 읽음 처리
+    if (!noti.is_read) {
+      readMutation.mutate({ id: noti.idx, token });
+    }
+    // 2. 이동
+    if (noti.url) {
+      navigate(noti.url);
+    }
+    // 3. 드롭다운 닫기
+    setIsNotiOpen(false);
+  };
+
   // 드롭다운 닫기 로직 (바깥 클릭 감지)
   useEffect(() => {
     function handleClickOutside(event) {
+      // 프로필 드롭다운
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+      }
+      // 알림 드롭다운
+      if (notiRef.current && !notiRef.current.contains(event.target)) {
+        setIsNotiOpen(false);
       }
     }
     // 이벤트 리스너 등록
@@ -54,11 +126,12 @@ function Navbar() {
       // 클린업
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [dropdownRef]);
+  }, [dropdownRef, notiRef]);
 
   const handleLogout = () => {
     logout();
     setIsDropdownOpen(false);
+    setIsNotiOpen(false);
     navigate("/"); // 로그아웃 후 홈으로 이동
   };
 
@@ -147,6 +220,72 @@ function Navbar() {
                   </svg> */}
                   {/* TODO: 장바구니 개수 표시 */}
                 </Link>
+
+                {/* --- 👇 [신규] 알림 벨 --- */}
+                <div className="relative" ref={notiRef}>
+                  <button
+                    onClick={() => setIsNotiOpen(!isNotiOpen)}
+                    className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none relative"
+                  >
+                    {unreadCount > 0 ? (
+                      <BellIconSolid className="h-6 w-6 text-yellow-500" />
+                    ) : (
+                      <BellIcon className="h-6 w-6" />
+                    )}
+
+                    {/* 읽지 않은 알림 뱃지 */}
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0 right-0 block h-4 w-4 rounded-full bg-red-500 ring-2 ring-white text-[10px] font-bold text-white text-center leading-4">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* 알림 드롭다운 */}
+                  {isNotiOpen && (
+                    <div className="absolute right-0 mt-2 w-80 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden">
+                      <div className="px-4 py-2 border-b flex justify-between items-center bg-gray-50">
+                        <span className="text-sm font-semibold text-gray-700">
+                          알림
+                        </span>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={() => readAllMutation.mutate()}
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            모두 읽음
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="max-h-96 overflow-y-auto">
+                        {notifications.length > 0 ? (
+                          notifications.map((noti) => (
+                            <div
+                              key={noti.idx}
+                              onClick={() => handleNotificationClick(noti)}
+                              className={`px-4 py-3 border-b last:border-0 cursor-pointer hover:bg-gray-50 transition ${
+                                !noti.is_read ? "bg-blue-50" : "bg-white"
+                              }`}
+                            >
+                              <p className="text-sm text-gray-800 line-clamp-2">
+                                {noti.message}
+                              </p>
+                              <span className="text-xs text-gray-400 mt-1 block">
+                                {new Date(noti.created_at).toLocaleString()}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-6 text-center text-gray-500 text-sm">
+                            새로운 알림이 없습니다.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* --- 프로필 드롭다운 --- */}
                 <div className="relative" ref={dropdownRef}>
                   {/* 1. 프로필 사진 버튼 */}

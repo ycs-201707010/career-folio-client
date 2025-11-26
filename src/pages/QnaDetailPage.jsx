@@ -10,6 +10,7 @@ import {
   CheckBadgeIcon,
   TrashIcon,
   UserCircleIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/solid";
 import {
   HandThumbUpIcon as HandThumbUpOutline,
@@ -249,6 +250,11 @@ function QnaDetailPage() {
   const { question, answers } = data;
   const isMyQuestion = user && user.userIdx === question.user_idx;
 
+  // --- 👇 [핵심 로직] AI 답변과 사람 답변 분리 ---
+  const aiAnswer = answers.find((a) => a.is_ai); // AI 답변 찾기
+  const humanAnswers = answers.filter((a) => !a.is_ai); // 사람 답변만 남기기
+  // --- [분리 완료] ---
+
   return (
     <div className="bg-gray-50 min-h-screen py-10">
       <div className="max-w-5xl mx-auto px-4">
@@ -324,12 +330,33 @@ function QnaDetailPage() {
         </div>
 
         {/* --- 2. 답변 목록 영역 --- */}
+        {/* --- 👇 2. [신규] AI 답변 전용 공간 --- */}
+        {aiAnswer && (
+          <div className="mb-8 p-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-lg shadow-md animate-fade-in">
+            <div className="bg-white rounded-md p-6">
+              <div className="flex items-center gap-2 mb-4 text-purple-600 font-bold">
+                <SparklesIcon className="w-6 h-6" />
+                <span>Gemini AI의 답변</span>
+              </div>
+              <div data-color-mode="light" className="prose max-w-none">
+                <MDEditor.Markdown
+                  source={aiAnswer.content}
+                  style={{ backgroundColor: "white", color: "#333" }}
+                />
+              </div>
+              <div className="mt-4 text-xs text-gray-400 text-right">
+                * AI가 생성한 답변은 부정확할 수 있습니다.
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-10">
           <h3 className="text-xl font-bold text-gray-800 mb-4">
-            {answers.length}개의 답변
+            {humanAnswers.length}개의 답변
           </h3>
           <div className="space-y-4">
-            {answers.map((answer) => (
+            {humanAnswers.map((answer) => (
               <AnswerItem
                 key={answer.idx}
                 answer={answer}
