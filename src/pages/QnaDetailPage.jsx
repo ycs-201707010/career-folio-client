@@ -80,7 +80,7 @@ const AnswerItem = ({
   onAdopt,
   onDelete,
 }) => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const queryClient = useQueryClient();
 
   // 투표 Mutation
@@ -89,7 +89,7 @@ const AnswerItem = ({
       voteAnswer({
         answerId: answer.idx,
         voteType,
-        token: localStorage.getItem("token"),
+        token,
       }), // (간단히 token 가져옴)
     onSuccess: (data) => {
       // 투표 성공 시 캐시 갱신 (좋아요 수 업데이트)
