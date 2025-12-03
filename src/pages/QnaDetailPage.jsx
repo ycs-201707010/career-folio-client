@@ -1,3 +1,4 @@
+// ** 지식IN 상세 페이지 (AI 답변 + 채택/투표 + 프로필링크 포함) **
 import React, { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +11,9 @@ import {
   CheckBadgeIcon,
   TrashIcon,
   UserCircleIcon,
-  SparklesIcon,
+  SparklesIcon, // 👈 AI 아이콘
+  ChatBubbleLeftRightIcon,
+  EyeIcon,
 } from "@heroicons/react/24/solid";
 import {
   HandThumbUpIcon as HandThumbUpOutline,
@@ -58,7 +61,6 @@ const voteAnswer = async ({ answerId, voteType, token }) => {
 };
 
 const deleteItem = async ({ type, id, token }) => {
-  // type: 'questions' or 'answers'
   const config = { headers: { Authorization: `Bearer ${token}` } };
   const url =
     type === "questions"
@@ -78,17 +80,22 @@ const AnswerItem = ({
   onAdopt,
   onDelete,
 }) => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   // 투표 Mutation
   const voteMutation = useMutation({
     mutationFn: ({ voteType }) =>
-      voteAnswer({ answerId: answer.idx, voteType, token }),
-    onSuccess: () => {
+      voteAnswer({
+        answerId: answer.idx,
+        voteType,
+        token: localStorage.getItem("token"),
+      }), // (간단히 token 가져옴)
+    onSuccess: (data) => {
+      // 투표 성공 시 캐시 갱신 (좋아요 수 업데이트)
       queryClient.invalidateQueries({ queryKey: ["questionDetail"] });
     },
-    onError: (err) => Swal.fire("오류", "로그인이 필요합니다.", "error"),
+    onError: () => Swal.fire("오류", "로그인이 필요합니다.", "error"),
   });
 
   // 본인 글인지 확인
@@ -122,7 +129,7 @@ const AnswerItem = ({
           <HandThumbDownOutline className="w-8 h-8" />
         </button>
 
-        {/* 채택 표시 (완료된 질문의 채택된 답변일 때) */}
+        {/* 채택 표시 */}
         {answer.is_adopted && (
           <div className="mt-4 flex flex-col items-center text-green-600">
             <CheckBadgeIcon className="w-10 h-10" />
@@ -145,9 +152,13 @@ const AnswerItem = ({
               <UserCircleIcon className="w-8 h-8 text-gray-300" />
             )}
             <div>
-              <p className="text-sm font-bold text-gray-900">
+              {/* 👇 [수정] 작성자 프로필 링크 연결 */}
+              <Link
+                to={`/profile/${answer.author_id}`}
+                className="text-sm font-bold text-gray-900 hover:text-blue-600 hover:underline"
+              >
                 {answer.author_name}
-              </p>
+              </Link>
               <p className="text-xs text-gray-500">
                 {new Date(answer.created_at).toLocaleString()}
               </p>
@@ -195,16 +206,15 @@ function QnaDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // 답변 작성용 state
   const [answerContent, setAnswerContent] = useState("");
 
-  // 데이터 조회
   const { data, isLoading, isError } = useQuery({
     queryKey: ["questionDetail", id],
     queryFn: () => fetchQuestionDetail(id),
+    refetchInterval: 5000, // (선택) AI 답변 확인을 위해 5초마다 자동 갱신 (필요 없으면 삭제)
   });
 
-  // Mutation: 답변 작성
+  // Mutations
   const createAnswerMutation = useMutation({
     mutationFn: () =>
       createAnswer({ questionId: id, content: answerContent, token }),
@@ -217,7 +227,6 @@ function QnaDetailPage() {
       Swal.fire("오류", err.response?.data?.message || "등록 실패", "error"),
   });
 
-  // Mutation: 채택
   const adoptMutation = useMutation({
     mutationFn: (answerId) => adoptAnswer({ questionId: id, answerId, token }),
     onSuccess: () => {
@@ -226,15 +235,14 @@ function QnaDetailPage() {
     },
   });
 
-  // Mutation: 삭제 (질문/답변 공용)
   const deleteMutation = useMutation({
     mutationFn: deleteItem,
     onSuccess: (data, variables) => {
       Swal.fire("삭제 완료", "성공적으로 삭제되었습니다.", "success");
       if (variables.type === "questions") {
-        navigate("/qna"); // 질문 삭제 시 목록으로
+        navigate("/qna");
       } else {
-        queryClient.invalidateQueries({ queryKey: ["questionDetail", id] }); // 답변 삭제 시 리프레시
+        queryClient.invalidateQueries({ queryKey: ["questionDetail", id] });
       }
     },
   });
@@ -250,10 +258,10 @@ function QnaDetailPage() {
   const { question, answers } = data;
   const isMyQuestion = user && user.userIdx === question.user_idx;
 
-  // --- 👇 [핵심 로직] AI 답변과 사람 답변 분리 ---
-  const aiAnswer = answers.find((a) => a.is_ai); // AI 답변 찾기
-  const humanAnswers = answers.filter((a) => !a.is_ai); // 사람 답변만 남기기
-  // --- [분리 완료] ---
+  // --- 👇 [핵심] AI 답변과 사람 답변 분리 ---
+  // (DB의 answers 테이블에 is_ai 컬럼이 있어야 함)
+  const aiAnswer = answers.find((a) => a.is_ai);
+  const humanAnswers = answers.filter((a) => !a.is_ai);
 
   return (
     <div className="bg-gray-50 min-h-screen py-10">
@@ -262,10 +270,26 @@ function QnaDetailPage() {
         <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 mb-8">
           {/* 질문 헤더 */}
           <div className="flex justify-between items-start border-b pb-4 mb-6">
-            <div>
+            <div className="flex-grow">
+              <div className="flex items-center gap-3 mb-3">
+                {question.is_solved ? (
+                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-xs font-bold border border-green-200">
+                    <CheckBadgeIcon className="w-4 h-4" /> 해결됨
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 rounded-md bg-gray-100 text-gray-500 text-xs font-bold border border-gray-200">
+                    미해결
+                  </span>
+                )}
+                <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-md text-xs font-bold border border-blue-100">
+                  {question.category}
+                </span>
+              </div>
+
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 {question.title}
               </h1>
+
               <div className="flex items-center gap-4 text-sm text-gray-500">
                 <span className="flex items-center gap-1">
                   {question.author_picture ? (
@@ -276,16 +300,26 @@ function QnaDetailPage() {
                   ) : (
                     <UserCircleIcon className="w-5 h-5" />
                   )}
-                  {question.author_nickname}
+
+                  {/* 👇 [수정] 질문자 프로필 링크 */}
+                  <Link
+                    to={`/profile/${question.author_id}`}
+                    className="hover:text-blue-600 hover:underline text-gray-700 font-medium"
+                  >
+                    {question.author_nickname || question.author_name}
+                  </Link>
                 </span>
                 <span>{new Date(question.created_at).toLocaleString()}</span>
-                <span>조회 {question.view_count}</span>
-                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-600 font-medium">
-                  {question.category}
+                <span className="flex items-center gap-1">
+                  <EyeIcon className="w-4 h-4" /> {question.view_count}
+                </span>
+                <span className="flex items-center gap-1">
+                  <ChatBubbleLeftRightIcon className="w-4 h-4" />{" "}
+                  {question.answer_count}
                 </span>
               </div>
             </div>
-            {/* 질문 삭제 버튼 */}
+
             {(isMyQuestion || user?.role === "admin") && (
               <button
                 onClick={() => {
@@ -303,7 +337,6 @@ function QnaDetailPage() {
             )}
           </div>
 
-          {/* 질문 본문 */}
           <div
             data-color-mode="light"
             className="prose max-w-none min-h-[150px]"
@@ -314,28 +347,30 @@ function QnaDetailPage() {
             />
           </div>
 
-          {/* 태그 목록 */}
           {question.tags && question.tags.length > 0 && (
             <div className="flex gap-2 mt-8">
-              {question.tags.map((tag, i) => (
+              {/* (태그가 콤마로 구분된 문자열로 올 경우 처리) */}
+              {(Array.isArray(question.tags)
+                ? question.tags
+                : question.tags.split(",")
+              ).map((tag, i) => (
                 <span
                   key={i}
                   className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-sm font-medium"
                 >
-                  # {tag}
+                  # {tag.trim()}
                 </span>
               ))}
             </div>
           )}
         </div>
 
-        {/* --- 2. 답변 목록 영역 --- */}
         {/* --- 👇 2. [신규] AI 답변 전용 공간 --- */}
         {aiAnswer && (
-          <div className="mb-8 p-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-lg shadow-md animate-fade-in">
+          <div className="mb-8 bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 p-[2px] rounded-lg shadow-md">
             <div className="bg-white rounded-md p-6">
-              <div className="flex items-center gap-2 mb-4 text-purple-600 font-bold">
-                <SparklesIcon className="w-6 h-6" />
+              <div className="flex items-center gap-2 mb-4 text-purple-600 font-bold text-lg">
+                <SparklesIcon className="w-6 h-6 animate-pulse" />
                 <span>Gemini AI의 답변</span>
               </div>
               <div data-color-mode="light" className="prose max-w-none">
@@ -344,13 +379,14 @@ function QnaDetailPage() {
                   style={{ backgroundColor: "white", color: "#333" }}
                 />
               </div>
-              <div className="mt-4 text-xs text-gray-400 text-right">
-                * AI가 생성한 답변은 부정확할 수 있습니다.
+              <div className="mt-4 pt-4 border-t text-xs text-gray-400 text-right">
+                * AI가 생성한 답변은 정확하지 않을 수 있습니다.
               </div>
             </div>
           </div>
         )}
 
+        {/* --- 3. 사람 답변 목록 --- */}
         <div className="mb-10">
           <h3 className="text-xl font-bold text-gray-800 mb-4">
             {humanAnswers.length}개의 답변
@@ -363,11 +399,7 @@ function QnaDetailPage() {
                 questionAuthorId={question.user_idx}
                 isQuestionSolved={question.is_solved}
                 onAdopt={() => {
-                  if (
-                    window.confirm(
-                      "이 답변을 채택하시겠습니까? 채택 후에는 변경할 수 없습니다."
-                    )
-                  )
+                  if (window.confirm("이 답변을 채택하시겠습니까?"))
                     adoptMutation.mutate(answer.idx);
                 }}
                 onDelete={() => {
@@ -383,7 +415,7 @@ function QnaDetailPage() {
           </div>
         </div>
 
-        {/* --- 3. 답변 작성 에디터 --- */}
+        {/* --- 4. 답변 작성 에디터 --- */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-lg font-bold text-gray-800 mb-4">
             답변 작성하기

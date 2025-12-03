@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import BadgeSettingsModal from "../components/BadgeSettingsModal";
 import { UserCircleIcon, Cog6ToothIcon } from "@heroicons/react/24/outline"; //  아이콘 추가
 import ActivityGraph from "../components/ActivityGraph";
 import MDEditor from "@uiw/react-md-editor"; // 마크다운 뷰어
@@ -26,12 +27,13 @@ const fetchUserActivity = async (id) => {
 // ----------------------------------------
 // --- 프로필 레이아웃 컴포넌트 (수정됨) ---
 // ----------------------------------------
-const ProfileLayout = ({ profileData, isMyProfile, activityData }) => {
-  // 👇 "경력"과 "기술"만 남깁니다.
-  const { profile, experiences, skills } = profileData;
-
-  // 👇 TODO: API에서 뱃지 정보도 가져와야 함
-  const badges = []; // (일단 빈 배열로 둡니다)
+const ProfileLayout = ({
+  profileData,
+  isMyProfile,
+  activityData,
+  onOpenBadgeSettings,
+}) => {
+  const { profile, experiences, skills, badges } = profileData;
 
   // 날짜 포맷팅 (경력 표시용)
   const formatDate = (dateStr) => (dateStr ? dateStr.split("T")[0] : "");
@@ -59,13 +61,24 @@ const ProfileLayout = ({ profileData, isMyProfile, activityData }) => {
 
         {/* 뱃지 전시 공간 */}
         <div className="space-y-2">
-          <h3 className="font-semibold">뱃지</h3>
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold">뱃지</h3>
+            {isMyProfile && (
+              <button
+                onClick={onOpenBadgeSettings}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition"
+              >
+                <Cog6ToothIcon className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
           <div className="flex flex-wrap gap-2">
             {badges.length > 0 ? (
               badges.map((badge) => (
                 <img
                   key={badge.idx}
-                  src={badge.image_url} // (뱃지 이미지 경로)
+                  src={`${API_BASE_URL}/uploads/${badge.image_url}`} // (뱃지 이미지 경로)
                   alt={badge.badge_name}
                   className="w-12 h-12"
                   title={badge.description}
@@ -210,6 +223,8 @@ function ProfilePage() {
     enabled: !!id, // id가 있을 때만 실행
   });
 
+  const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
+
   // --- 👇 [핵심 수정] ---
   // "내 프로필"인지 확인하는 로직 변경
   // (로그인한 유저의 'userIdx'와 지금 보는 프로필의 'user_idx'를 비교)
@@ -234,6 +249,14 @@ function ProfilePage() {
         profileData={data}
         isMyProfile={isMyProfile}
         activityData={activityData}
+        onOpenBadgeSettings={() => setIsBadgeModalOpen(true)}
+      />
+
+      <BadgeSettingsModal
+        show={isBadgeModalOpen}
+        onClose={() => setIsBadgeModalOpen(false)}
+        allBadges={data?.badges || []}
+        profileId={id}
       />
     </div>
   );

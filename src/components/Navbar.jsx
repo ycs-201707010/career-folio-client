@@ -200,7 +200,7 @@ function Navbar() {
               <>
                 <Link
                   to="/cart"
-                  className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-4"
+                  className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2  mr-4"
                 >
                   <ShoppingCartIcon className="h-6 w-6" />
                   {/* <svg
@@ -225,7 +225,7 @@ function Navbar() {
                 <div className="relative" ref={notiRef}>
                   <button
                     onClick={() => setIsNotiOpen(!isNotiOpen)}
-                    className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none relative"
+                    className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2  mr-4 relative"
                   >
                     {unreadCount > 0 ? (
                       <BellIconSolid className="h-6 w-6 text-yellow-500" />

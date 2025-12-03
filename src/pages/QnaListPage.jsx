@@ -39,6 +39,10 @@ function QnaListPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const handleQuestionClick = (id) => {
+    navigate(`/qna/${id}`);
+  };
+
   // --- 상태 관리 ---
   const [activeCategory, setActiveCategory] = useState("all");
   const [sortBy, setSortBy] = useState("latest"); // latest, views, answers
@@ -146,94 +150,99 @@ function QnaListPage() {
             questions?.map((q) => (
               <div
                 key={q.idx}
+                onClick={() => handleQuestionClick(q.idx)}
                 className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition border border-transparent hover:border-blue-200"
               >
-                <Link to={`/qna/${q.idx}`}>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-grow pr-4">
-                      {/* 제목 */}
-                      <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-1">
-                        {q.title}
-                      </h3>
-                      {/* 본문 미리보기 (마크다운 기호 제거는 복잡하니 일단 텍스트만) */}
-                      <p className="text-sm text-gray-500 line-clamp-2 mb-3">
-                        {q.content.replace(/[#*`]/g, "")}
-                      </p>
+                <div className="flex justify-between items-start">
+                  <div className="flex-grow pr-4">
+                    {/* 제목 */}
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-1">
+                      {q.title}
+                    </h3>
+                    {/* 본문 미리보기 (마크다운 기호 제거는 복잡하니 일단 텍스트만) */}
+                    <p className="text-sm text-gray-500 line-clamp-2 mb-3">
+                      {q.content.replace(/[#*`]/g, "")}
+                    </p>
 
-                      {/* 태그 & 메타 정보 */}
-                      <div className="flex items-center flex-wrap gap-3 text-xs text-gray-500">
-                        <span
-                          className={`px-2 py-0.5 rounded bg-gray-100 font-medium text-gray-600`}
-                        >
-                          {CATEGORIES.find((c) => c.id === q.category)?.name ||
-                            q.category}
-                        </span>
-
-                        <span className="flex items-center gap-1">
-                          {q.author_picture ? (
-                            <img
-                              src={`${API_BASE_URL}/${q.author_picture}`}
-                              alt=""
-                              className="w-4 h-4 rounded-full"
-                            />
-                          ) : (
-                            <UserCircleIcon className="w-4 h-4" />
-                          )}
-                          {q.author_nickname || q.author_name}
-                        </span>
-                        <span>{formatDate(q.created_at)}</span>
-
-                        {/* 태그 */}
-                        {q.tags &&
-                          q.tags.split(",").map((tag, i) => (
-                            <span
-                              key={i}
-                              className="flex items-center text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded"
-                            >
-                              <HashtagIcon className="w-3 h-3 mr-0.5" />
-                              {tag}
-                            </span>
-                          ))}
-                      </div>
-                    </div>
-
-                    {/* 우측 통계 (답변수, 조회수) */}
-                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                      {/* 해결됨 / 미해결 뱃지 */}
-                      <div
-                        className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${
-                          q.is_solved
-                            ? "bg-green-100 text-green-700 border-green-200"
-                            : "bg-gray-50 text-gray-500 border-gray-200"
-                        }`}
+                    {/* 태그 & 메타 정보 */}
+                    <div className="flex items-center flex-wrap gap-3 text-xs text-gray-500">
+                      <span
+                        className={`px-2 py-0.5 rounded bg-gray-100 font-medium text-gray-600`}
                       >
-                        {q.is_solved ? (
-                          <>
-                            <CheckBadgeIcon className="w-4 h-4" />
-                            <span>해결됨</span>
-                          </>
+                        {CATEGORIES.find((c) => c.id === q.category)?.name ||
+                          q.category}
+                      </span>
+
+                      <span className="flex items-center gap-1 z-10">
+                        {q.author_picture ? (
+                          <img
+                            src={`${API_BASE_URL}/${q.author_picture}`}
+                            alt=""
+                            className="w-4 h-4 rounded-full"
+                          />
                         ) : (
-                          <span>미해결</span>
+                          <UserCircleIcon className="w-4 h-4" />
                         )}
-                      </div>
+                        <Link
+                          to={`/profile/${q.author_id}`} // author_id 사용
+                          onClick={(e) => e.stopPropagation()} // 👈 상위 카드 클릭 이벤트 전파 중단 (중요!)
+                          className="hover:underline text-gray-700 font-medium"
+                        >
+                          {q.author_nickname || q.author_name}
+                        </Link>
+                      </span>
+                      <span>{formatDate(q.created_at)}</span>
 
-                      <div
-                        className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold ${
-                          q.is_solved
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        <ChatBubbleLeftRightIcon className="w-4 h-4" />
-                        <span>{q.answer_count}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-gray-400">
-                        <EyeIcon className="w-4 h-4" />
-                        <span>{q.view_count}</span>
-                      </div>
+                      {/* 태그 */}
+                      {q.tags &&
+                        q.tags.split(",").map((tag, i) => (
+                          <span
+                            key={i}
+                            className="flex items-center text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded"
+                          >
+                            <HashtagIcon className="w-3 h-3 mr-0.5" />
+                            {tag}
+                          </span>
+                        ))}
                     </div>
                   </div>
-                </Link>
+
+                  {/* 우측 통계 (답변수, 조회수) */}
+                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                    {/* 해결됨 / 미해결 뱃지 */}
+                    <div
+                      className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${
+                        q.is_solved
+                          ? "bg-green-100 text-green-700 border-green-200"
+                          : "bg-gray-50 text-gray-500 border-gray-200"
+                      }`}
+                    >
+                      {q.is_solved ? (
+                        <>
+                          <CheckBadgeIcon className="w-4 h-4" />
+                          <span>해결됨</span>
+                        </>
+                      ) : (
+                        <span>미해결</span>
+                      )}
+                    </div>
+
+                    <div
+                      className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold ${
+                        q.is_solved
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      <ChatBubbleLeftRightIcon className="w-4 h-4" />
+                      <span>{q.answer_count}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                      <EyeIcon className="w-4 h-4" />
+                      <span>{q.view_count}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
         </div>
