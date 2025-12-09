@@ -21,7 +21,7 @@ function LoginPage() {
         password,
       });
       login(response.data.token); // AuthContext의 login 함수 호출
-      navigate("/dashboard"); // 로그인 성공 시 대시보드로 이동
+      navigate("/"); // 로그인 성공 시 대시보드로 이동
     } catch (err) {
       setError(err.response?.data?.message || "로그인에 실패했습니다.");
     }
