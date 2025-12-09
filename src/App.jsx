@@ -27,6 +27,7 @@ import PublicPortfolioPage from "./pages/PublicPortfolioPage";
 import QnaListPage from "./pages/QnaListPage";
 import QnaWritePage from "./pages/QnaWritePage";
 import QnaDetailPage from "./pages/QnaDetailPage";
+import FindAccountPage from "./pages/FindAccountPage";
 
 // ... 다른 페이지 import ...
 
@@ -167,6 +168,8 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         {/* 포트폴리오 조회 페이지 */}
         <Route path="/portfolio/:id" element={<PublicPortfolioPage />} />
+        {/* 아이디/비밀번호 찾기 페이지 */}
+        <Route path="/find-account" element={<FindAccountPage />} />
       </Routes>
     </Router>
   );

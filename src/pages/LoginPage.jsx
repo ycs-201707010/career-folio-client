@@ -68,12 +68,24 @@ function LoginPage() {
             로그인
           </button>
         </form>
-        <p className="text-center text-sm text-gray-600 mt-4">
-          계정이 없으신가요?{" "}
-          <Link to="/signup" className="text-blue-600 hover:underline">
-            회원가입
+        <div className="flex items-center justify-between text-sm mt-4">
+          <Link
+            to="/find-account"
+            className="font-medium text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            아이디 / 비밀번호 찾기
           </Link>
-        </p>
+
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400">계정이 없으신가요?</span>
+            <Link
+              to="/signup"
+              className="font-medium text-blue-600 hover:text-blue-500 hover:underline transition-colors"
+            >
+              회원가입
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
