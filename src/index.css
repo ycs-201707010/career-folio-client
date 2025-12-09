@@ -60,24 +60,3 @@ textarea,
 select {
   @apply border border-gray-300 rounded px-3 py-2 focus:outline-none  dark:bg-zinc-800 dark:text-white dark:border-zinc-600;
 }
-
-/* 1. 라이브러리의 CSS 변수 자체를 덮어씌웁니다. (가장 근본적인 해결책) */
-[data-color-mode] {
-  --md-editor-border-active-color: #e5e7eb !important; /* 활성화돼도 Tailwind gray-200 색상 유지 */
-  --md-editor-box-shadow-color: transparent !important; /* 파란색 광채(그림자) 투명하게 */
-}
-
-/* 2. 클래스 선택자로 한 번 더 강제합니다. (2중 잠금) */
-.w-md-editor:focus-within,
-.w-md-editor:focus,
-.w-md-editor.w-md-editor-show-live,
-.w-md-editor.w-md-editor-show-edit {
-  border-color: #e5e7eb !important; /* Tailwind gray-200 */
-  box-shadow: none !important; /* 그림자 제거 */
-  outline: none !important; /* 아웃라인 제거 */
-}
-
-/* 3. 내부 textarea의 기본 포커스 스타일도 제거 */
-.w-md-editor-text-input {
-  outline: none !important;
-}
