@@ -12,7 +12,12 @@ import {
   WrenchScrewdriverIcon,
   BellIcon,
 } from "@heroicons/react/24/outline"; // 아이콘 import
-import { BellIcon as BellIconSolid } from "@heroicons/react/24/solid";
+import {
+  BellIcon as BellIconSolid,
+  SunIcon,
+  MoonIcon,
+} from "@heroicons/react/24/solid";
+import { useTheme } from "../context/ThemeContext";
 
 const API_BASE_URL = "http://localhost:8080"; // API 주소
 
@@ -45,6 +50,8 @@ const markAllAsRead = async (token) => {
 
 function Navbar() {
   const { user, logout, token } = useAuth(); // 현재 사용자 정보와 로그아웃 함수 가져오기
+  const { theme, toggleTheme } = useTheme(); // 테마 상태 가져옴
+
   const navigate = useNavigate();
   const queryClient = useQueryClient(); // 👈 추가
 
@@ -196,6 +203,18 @@ function Navbar() {
 
           {/* 오른쪽: 로그인/로그아웃, 장바구니 등 */}
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
+            <button
+              onClick={toggleTheme}
+              className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors mr-2"
+              aria-label="테마 변경"
+            >
+              {theme === "dark" ? (
+                <SunIcon className="h-6 w-6 text-yellow-500" /> // 다크일 땐 해 보여주기
+              ) : (
+                <MoonIcon className="h-6 w-6 text-gray-600" /> // 라이트일 땐 달 보여주기
+              )}
+            </button>
+
             {user ? (
               <>
                 <Link
