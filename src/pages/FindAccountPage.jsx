@@ -50,6 +50,7 @@ function FindAccountPage() {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/send-code`, {
         email: formData.email,
+        type: "find",
       });
       Swal.fire("전송 완료", res.data.message, "success");
     } catch (err) {

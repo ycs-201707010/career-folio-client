@@ -289,6 +289,7 @@ const SignupFormScreen = () => {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/send-code`, {
         email: formData.email,
+        type: "signup",
       });
       Swal.fire({
         icon: "success",
