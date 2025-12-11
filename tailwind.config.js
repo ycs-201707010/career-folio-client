@@ -13,8 +13,27 @@ export default {
         sans: ["Pretendard", ...defaultTheme.fontFamily.sans],
       },
       // --- [수정 완료] ---
+
+      colors: {
+        primary: {
+          DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
+          on: "rgb(var(--color-on-primary) / <alpha-value>)",
+          container: "rgb(var(--color-primary-container) / <alpha-value>)",
+        },
+        secondary: {
+          DEFAULT: "rgb(var(--color-secondary) / <alpha-value>)",
+          on: "rgb(var(--color-on-secondary) / <alpha-value>)",
+          container: "rgb(var(--color-secondary-container) / <alpha-value>)",
+        },
+        surface: {
+          DEFAULT: "rgb(var(--color-surface) / <alpha-value>)",
+          on: "rgb(var(--color-on-surface) / <alpha-value>)",
+          container: "rgb(var(--color-surface-container) / <alpha-value>)",
+        },
+        outline: "rgb(var(--color-outline) / <alpha-value>)",
+        error: "rgb(var(--color-error) / <alpha-value>)",
+      },
     },
   },
   plugins: [],
-  darkMode: "class",
 };

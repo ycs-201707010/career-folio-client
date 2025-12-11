@@ -1,4 +1,3 @@
-/** 프리텐다드 폰트 경로 */
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
 @tailwind base;
@@ -6,57 +5,89 @@
 @tailwind utilities;
 
 @layer base {
-  html,
-  body,
-  #root {
-    /* 'Pretendard'를 최우선으로 설정하고,
-      나머지는 시스템 기본 폰트(Tailwind 기본값)로 대체(fallback)합니다.
-    */
-    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,
-      Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo",
-      "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji",
-      "Segoe UI Symbol", sans-serif;
+  /* 1. 색상 변수 정의 (기존과 동일) */
+  :root {
+    --color-primary: 27 179 115;
+    --color-on-primary: 255 255 255;
+    --color-primary-container: 22 143 92;
+    --color-on-primary-container: 255 255 255;
 
-    /* (선택적) 폰트가 더 부드럽게 보이도록 설정 */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    --color-secondary: 102 187 106;
+    --color-on-secondary: 255 255 255;
+    --color-secondary-container: 0 82 35;
+    --color-on-secondary-container: 190 235 194;
+
+    --color-surface: 255 255 255;
+    --color-on-surface: 14 15 16;
+    --color-surface-container: 249 249 249;
+    --color-surface-on-variant: 46 48 51;
+
+    --color-outline: 77 77 77;
+    --color-error: 186 26 26;
+    --color-on-error: 255 255 255;
   }
-}
 
-/* 기본 글꼴 및 전체 문서 초기화 */
-html {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
-  min-height: 100vh;
-  scroll-behavior: smooth;
-}
+  .dark {
+    --color-primary: 0 255 163;
+    --color-on-primary: 14 15 16;
+    --color-primary-container: 27 179 115;
+    --color-on-primary-container: 14 15 16;
 
-/* 기본 배경/텍스트 색상: 라이트 모드 기준 */
-body {
-  @apply bg-white text-gray-900 transition-colors duration-300;
-}
+    --color-secondary: 46 139 87;
+    --color-on-secondary: 255 255 255;
+    --color-secondary-container: 0 77 64;
+    --color-on-secondary-container: 167 255 235;
 
-/* 다크모드용: html 태그에 class="dark" 붙으면 작동 */
-.dark body {
-  @apply bg-zinc-900 text-gray-100;
-}
+    --color-surface: 20 21 23;
+    --color-on-surface: 255 255 255;
+    --color-surface-container: 32 34 36;
+    --color-surface-on-variant: 201 206 220;
 
-/* 링크 스타일 */
-a {
-  @apply text-blue-600 hover:no-underline;
-}
+    --color-outline: 77 77 77;
+    --color-error: 255 180 171;
+    --color-on-error: 105 0 5;
+  }
 
-/* 버튼 기본값 */
-button {
-  @apply px-4 py-2 rounded-md font-medium transition-colors;
-}
-button:hover {
-  @apply bg-gray-100 dark:bg-zinc-700;
-}
+  /* 2. 기본 스타일 (변수 직접 사용으로 에러 회피) */
+  html {
+    font-family: "Pretendard", system-ui, sans-serif;
+    scroll-behavior: smooth;
+  }
 
-/* 입력 필드 기본값 */
-input,
-textarea,
-select {
-  @apply border border-gray-300 rounded px-3 py-2 focus:outline-none  dark:bg-zinc-800 dark:text-white dark:border-zinc-600;
+  body {
+    /* 👇 수정됨 */
+    background-color: rgb(var(--color-surface));
+    color: rgb(var(--color-on-surface));
+    @apply transition-colors duration-300;
+  }
+
+  a {
+    /* 기본적으로 테마의 Primary(녹색) 색상을 따르게 변경 */
+    /* Navbar 등에서 text-surface-on 클래스를 주면 그게 우선 적용됩니다. */
+    @apply text-primary hover:underline decoration-primary/30 underline-offset-2 transition-colors;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    /* font-bold 같은 유틸리티는 써도 됨 */
+    @apply font-bold;
+    /* 색상은 상속받게 둠 (body에서 설정했으므로) */
+  }
+
+  /* input 등은 여기서 @apply로 커스텀 색상을 쓰면 또 에러 날 수 있으니
+     최소한의 스타일만 남기거나, JSX 컴포넌트에서 클래스로 처리하세요. */
+  input,
+  textarea,
+  select {
+    /* border-gray-300 같은 기본 클래스는 써도 됨 */
+    @apply border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2;
+
+    /* 👇 다크모드 등 색상은 여기서 직접 지정 */
+    background-color: rgb(var(--color-surface-container));
+    color: rgb(var(--color-on-surface));
+  }
 }
